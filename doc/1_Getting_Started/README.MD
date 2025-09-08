@@ -94,7 +94,7 @@ Start with this before proceeding to the OS setup
 4. Change the directory in your terminal to Downloads `cd ~/Downloads`
 5. Make nrfutils executable `chmod +x nrfutil`
 6. Move nrfutils to your local bin `mv nrfutil ~/.local/bin/`. If this folder does not exist create it `mkdir -p ~/.local/bin` and add it to your path `echo; echo 'export $PATH=$PATH:$HOME/.local/bin' >> ~/.profile` and restart your computer.
-7. Change the current directory to your user directory: `cd /c/Users/<Your Username>`
+7. Change the current directory to your home directory: `cd ~`
 8. Create a new directory for zephyr projects: `mkdir zephyr-projects`
 9. Change the directory to the zephyr projects directory `cd zephyr-projects`
 10. Create a python virtual environment `python -m venv .venv`
