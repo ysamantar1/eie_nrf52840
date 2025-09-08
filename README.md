@@ -48,6 +48,22 @@ points to the development branch of Zephyr, also `main`.
 [west_ext]: https://docs.zephyrproject.org/latest/develop/west/extensions.html
 [runner_ext]: https://docs.zephyrproject.org/latest/develop/modules.html#external-runners
 
+## Setup
+
+1. Create a new folder in `C:\Users\Your Name\` called zephyr
+2. Open that folder in a terminal
+3. Run `python3 -m venv .venv`
+4. Activate the venv
+5. Clone the EIE source code using `west init -m https://github.com/eiefirmware/eie_nrf52840.git --mr feature/initial-zephyr-integration`
+6. Move to the source folder `cd eie_nrf52840`
+7. Update west `west update`
+8. Run `west zephyr-export`
+9. Run `west packages pip --install`
+10. Run `west sdk install --toolchains arm-zephyr-eabi` to install the required toolchains
+11. Run `west build -b nrf52840/nrf52840 app` to build the application
+12. Run `west flash` to flash the board
+
+
 ## Getting Started
 
 Before getting started, make sure you have a proper Zephyr development
