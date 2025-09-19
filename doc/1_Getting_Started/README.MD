@@ -28,21 +28,22 @@ Start with this before proceeding to the OS setup
 3. Use Winget to install dependencies  `winget install Kitware.CMake Ninja-build.Ninja oss-winget.gperf python Git.Git oss-winget.dtc wget 7zip.7zip nrfutil`. You may need to add 7zip to the path
 4. Download the latest [jLink installer](https://www.segger.com/downloads/jlink/) and run through the setup process.
 5. Open Git bash in the windows terminal
-6. Change the current directory to your user directory: `cd /c/Users/<Your Username>`
-7. Create a new directory for zephyr projects: `mkdir zephyr-projects`
-8. Change the directory to the zephyr projects directory `cd zephyr-projects`
-9. Create a python virtual environment `python -m venv .venv`
-10. Activate the venv `source .venv/Scripts/activate`
-11. Install west by running `pip install west`
-12. Go to the repo you created during the [github setup](#github-setup) and click on the green code button and copy the HTTPS URL. The URL should look something like `https://github.com/<your account>/eie_nrf52840.git` depending on what you named the repository. **DO NOT DOWNLOAD THE CODE AS A ZIP**
-13. Clone the EIE source code `west init -m <Your Repo Link Here>` filling in the link from the previous step.
-14. If you run `ls` you should see your cloned repo
-15. Move into the cloned repo `cd <your repo name>`
-16. Update west `west update`
-17. Run `west zephyr-export`to create necessary files for cmake to run
-18. Install the required python packages for west `west packages pip --install`
-19. Install the required toolchain `west sdk install --toolchains arm-zephyr-eabi`
-20. Proceed to [Building and Flashing the Board](#building-and-flashing-the-board)
+6. Run `nrfutil install device`
+7. Change the current directory to your user directory: `cd /c/Users/<Your Username>`
+8. Create a new directory for zephyr projects: `mkdir zephyr-projects`
+9. Change the directory to the zephyr projects directory `cd zephyr-projects`
+10. Create a python virtual environment `python -m venv .venv`
+11. Activate the venv `source .venv/Scripts/activate`
+12. Install west by running `pip install west`
+13. Go to the repo you created during the [github setup](#github-setup) and click on the green code button and copy the HTTPS URL. The URL should look something like `https://github.com/<your account>/eie_nrf52840.git` depending on what you named the repository. **DO NOT DOWNLOAD THE CODE AS A ZIP**
+14. Clone the EIE source code `west init -m <Your Repo Link Here>` filling in the link from the previous step.
+15. If you run `ls` you should see your cloned repo
+16. Move into the cloned repo `cd <your repo name>`
+17. Update west `west update`
+18. Run `west zephyr-export`to create necessary files for cmake to run
+19. Install the required python packages for west `west packages pip --install`
+20. Install the required toolchain `west sdk install --toolchains arm-zephyr-eabi`
+21. Proceed to [Building and Flashing the Board](#building-and-flashing-the-board)
 </details>
 
 ## MacOS
@@ -62,21 +63,22 @@ Start with this before proceeding to the OS setup
 9. Make nrfutils executable `chmod +x nrfutil`
 10. Move nrfutils to your local bin `mv nrfutil ~/.local/bin/`. If this folder does not exist create it `mkdir -p ~/.local/bin` and add it to your path `echo; echo 'export $PATH=$PATH:$HOME/.local/bin' >> ~/.zprofile && source ~/.zprofile`.
 11. Open a new terminal
-12. Change the current directory to your user directory: `cd ~`
-13. Create a new directory for zephyr projects: `mkdir zephyr-projects`
-14. Change the directory to the zephyr projects directory `cd zephyr-projects`
-15. Create a python virtual environment `python -m venv .venv`
-16. Activate the venv `source .venv/bin/activate`
-17. Install west by running `pip install west`
-18. Go to the repo you created during the [github setup](#github-setup) and click on the green code button and copy the HTTPS URL. The URL should look something like `https://github.com/<your account>/eie_nrf52840.git` depending on what you named the repository. **DO NOT DOWNLOAD THE CODE AS A ZIP**
-19. Clone the EIE source code `west init -m <Your Repo Link Here>` filling in the link from the previous step.
-20. If you run `ls` you should see your cloned repo
-21. Move into the cloned repo `cd <your repo name>`
-22. Update west `west update`
-23. Run `west zephyr-export`to create necessary files for cmake to run
-24. Install the required python packages for west `west packages pip --install`
-25. Install the required toolchain `west sdk install --toolchains arm-zephyr-eabi`
-26. Proceed to [Building and Flashing the Board](#building-and-flashing-the-board)
+12. Run `nrfutil install device`
+13. Change the current directory to your user directory: `cd ~`
+14. Create a new directory for zephyr projects: `mkdir zephyr-projects`
+15. Change the directory to the zephyr projects directory `cd zephyr-projects`
+16. Create a python virtual environment `python -m venv .venv`
+17. Activate the venv `source .venv/bin/activate`
+18. Install west by running `pip install west`
+19. Go to the repo you created during the [github setup](#github-setup) and click on the green code button and copy the HTTPS URL. The URL should look something like `https://github.com/<your account>/eie_nrf52840.git` depending on what you named the repository. **DO NOT DOWNLOAD THE CODE AS A ZIP**
+20. Clone the EIE source code `west init -m <Your Repo Link Here>` filling in the link from the previous step.
+21. If you run `ls` you should see your cloned repo
+22. Move into the cloned repo `cd <your repo name>`
+23. Update west `west update`
+24. Run `west zephyr-export`to create necessary files for cmake to run
+25. Install the required python packages for west `west packages pip --install`
+26. Install the required toolchain `west sdk install --toolchains arm-zephyr-eabi`
+27. Proceed to [Building and Flashing the Board](#building-and-flashing-the-board)
 
 </details>
 
@@ -94,21 +96,22 @@ Start with this before proceeding to the OS setup
 4. Change the directory in your terminal to Downloads `cd ~/Downloads`
 5. Make nrfutils executable `chmod +x nrfutil`
 6. Move nrfutils to your local bin `mv nrfutil ~/.local/bin/`. If this folder does not exist create it `mkdir -p ~/.local/bin` and add it to your path `echo; echo 'export $PATH=$PATH:$HOME/.local/bin' >> ~/.profile` and restart your computer.
-7. Change the current directory to your home directory: `cd ~`
-8. Create a new directory for zephyr projects: `mkdir zephyr-projects`
-9. Change the directory to the zephyr projects directory `cd zephyr-projects`
-10. Create a python virtual environment `python -m venv .venv`
-11. Activate the venv `source .venv/Scripts/activate`
-12. Install west by running `pip install west`
-13. Go to the repo you created during the [github setup](#github-setup) and click on the green code button and copy the HTTPS URL. The URL should look something like `https://github.com/<your account>/eie_nrf52840.git` depending on what you named the repository. **DO NOT DOWNLOAD THE CODE AS A ZIP**
-14. Clone the EIE source code `west init -m <Your Repo Link Here>` filling in the link from the previous step.
-15. If you run `ls` you should see your cloned repo
-16. Move into the cloned repo `cd <your repo name>`
-17. Update west `west update`
-18. Run `west zephyr-export`to create necessary files for cmake to run
-19. Install the required python packages for west `west packages pip --install`
-20. Install the required toolchain `west sdk install --toolchains arm-zephyr-eabi`
-21. Proceed to [Building and Flashing the Board](#building-and-flashing-the-board)
+7. Run `nrfutil install device`
+8. Change the current directory to your home directory: `cd ~`
+9. Create a new directory for zephyr projects: `mkdir zephyr-projects`
+10. Change the directory to the zephyr projects directory `cd zephyr-projects`
+11. Create a python virtual environment `python -m venv .venv`
+12. Activate the venv `source .venv/bin/activate`
+13. Install west by running `pip install west`
+14. Go to the repo you created during the [github setup](#github-setup) and click on the green code button and copy the HTTPS URL. The URL should look something like `https://github.com/<your account>/eie_nrf52840.git` depending on what you named the repository. **DO NOT DOWNLOAD THE CODE AS A ZIP**
+15. Clone the EIE source code `west init -m <Your Repo Link Here>` filling in the link from the previous step.
+16. If you run `ls` you should see your cloned repo
+17. Move into the cloned repo `cd <your repo name>`
+18. Update west `west update`
+19. Run `west zephyr-export`to create necessary files for cmake to run
+20. Install the required python packages for west `west packages pip --install`
+21. Install the required toolchain `west sdk install --toolchains arm-zephyr-eabi`
+22. Proceed to [Building and Flashing the Board](#building-and-flashing-the-board)
 </details>
 
 ## Building and Flashing the Board
