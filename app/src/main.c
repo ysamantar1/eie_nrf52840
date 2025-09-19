@@ -7,22 +7,24 @@ Program entry point
 #include "init.h"
 #include "led.c"
 
-/* 1000 msec = 1 sec */
 #define SLEEP_TIME_MS   250
 
 int main(void)
 {
 	if (init_leds()){
-    DEBUG("Failed to init LEDS");
+    return 0;
+  }
+
+  if (toggle_led(LED0) || toggle_led(LED3)) {
     return 0;
   }
 
 	while (1) {
-		if (toggle_led(LED0)) {
-      DEBUG("Failed to toggle LED");
+    k_msleep(SLEEP_TIME_MS);
+
+		if (toggle_led(LED0) || toggle_led(LED1) || toggle_led(LED2) || toggle_led(LED3)) {
 			return 0;
 		}
-		k_msleep(SLEEP_TIME_MS);
 	}
 	return 0;
 }

@@ -18,11 +18,19 @@ typedef enum led_inst_t {
   NUM_LEDS,
 } led_inst;
 
+typedef enum led_state_t {
+  LOW,
+  HIGH,
+  NUM_STATES,
+} led_state;
+
 /* ----------------------------------------------------------------------------
                               Public Functions
 ---------------------------------------------------------------------------- */
 int init_leds();
 
 int toggle_led(led_inst led_instance);
+
+int set_led(led_inst led_instance, led_state new_state);
 
 #endif
