@@ -8,16 +8,22 @@ Header to define constants and useful macros
 #include "includes.h"
 
 // Configs
-#define DEBUG_LOGS 1
+#define ERROR_LOGS  1
+#define DEBUG_LOGS  0
 
 // Logging
+#if ERROR_LOGS
+#define ERROR(fmt, ...) printk("Error: " fmt "\n", ##__VA_ARGS__)
+#else
+#define ERROR(...) do { } while (0)
+#endif
+
 #if DEBUG_LOGS
-#define DEBUG(fmt, ...) printk("Debug: " fmt, ##__VA_ARGS__)
+#define DEBUG(fmt, ...) printk("Debug: " fmt "\n", ##__VA_ARGS__)
 #else
 #define DEBUG(...) do { } while (0)
 #endif
 
-// Types
-typedef struct gpio_dt_spec gpio_dt_spec_t;
+#define CONSOLE(fmt, ...) printk(fmt, ##__VA_ARGS__)
 
 #endif

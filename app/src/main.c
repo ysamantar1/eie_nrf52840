@@ -3,28 +3,18 @@ Program entry point
 */
 
 #include "includes.h"
-#include "threads.h"
-#include "init.h"
-#include "led.c"
-
-#define SLEEP_TIME_MS   250
+#include "led.h"
 
 int main(void)
 {
-	if (init_leds()){
+	if (LED_init()){
     return 0;
   }
 
-  if (toggle_led(LED0) || toggle_led(LED3)) {
-    return 0;
+  LED_blink(LED0, LED_5HZ);
+
+  while(1) {
+    k_msleep(1000);
   }
-
-	while (1) {
-    k_msleep(SLEEP_TIME_MS);
-
-		if (toggle_led(LED0) || toggle_led(LED1) || toggle_led(LED2) || toggle_led(LED3)) {
-			return 0;
-		}
-	}
 	return 0;
 }

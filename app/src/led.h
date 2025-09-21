@@ -11,7 +11,7 @@ Header to define led interface
                                     TYPES
 ---------------------------------------------------------------------------- */
 typedef enum led_inst_t {
-  LED0,
+  LED0 = 0,
   LED1,
   LED2,
   LED3,
@@ -19,18 +19,29 @@ typedef enum led_inst_t {
 } led_inst;
 
 typedef enum led_state_t {
-  LOW,
-  HIGH,
-  NUM_STATES,
+  LED_OFF = 0,
+  LED_ON,
 } led_state;
+
+typedef enum led_frequency_t {
+  LED_1HZ = 1,
+  LED_2HZ = 2,
+  LED_4HZ = 4,
+  LED_5HZ = 5,
+  LED_8HZ = 8,
+  LED_10HZ = 10,
+  LED_16HZ = 16,
+} led_frequency;
 
 /* ----------------------------------------------------------------------------
                               Public Functions
 ---------------------------------------------------------------------------- */
-int init_leds();
+int LED_init();
 
-int toggle_led(led_inst led_instance);
+int LED_toggle(led_inst led_instance);
 
-int set_led(led_inst led_instance, led_state new_state);
+int LED_set(led_inst led_instance, led_state new_state);
+
+void LED_blink(led_inst led_instance, led_frequency frequency);
 
 #endif
