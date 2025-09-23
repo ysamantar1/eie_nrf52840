@@ -11,3 +11,4 @@ project(app LANGUAGES C)
 
 target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/led.c)
+target_sources(app PRIVATE src/btn.c)

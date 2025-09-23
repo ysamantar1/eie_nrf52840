@@ -10,13 +10,13 @@ Header to define led interface
 /* ----------------------------------------------------------------------------
                                     TYPES
 ---------------------------------------------------------------------------- */
-typedef enum led_inst_t {
+typedef enum led_id_t {
   LED0 = 0,
   LED1,
   LED2,
   LED3,
   NUM_LEDS,
-} led_inst;
+} led_id;
 
 typedef enum led_state_t {
   LED_OFF = 0,
@@ -38,10 +38,10 @@ typedef enum led_frequency_t {
 ---------------------------------------------------------------------------- */
 int LED_init();
 
-int LED_toggle(led_inst led_instance);
+int LED_toggle(led_id led);
 
-int LED_set(led_inst led_instance, led_state new_state);
+int LED_set(led_id led, led_state new_state);
 
-void LED_blink(led_inst led_instance, led_frequency frequency);
+void LED_blink(led_id led, led_frequency frequency);
 
 #endif

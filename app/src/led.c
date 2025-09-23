@@ -1,5 +1,5 @@
 /*
-Header to define led encapsulation logic
+Header to define led module logic
 */
 
 #include "led.h"
@@ -32,17 +32,17 @@ typedef struct led_gpio_t {
 ---------------------------------------------------------------------------- */
 static int _config_led(const led_gpio *led);
 
-void _suspend_blink_thread(led_inst led_instance);
+void _suspend_blink_thread(led_id led);
 
-void _blink_led_loop(void *led_instance, void *p2, void *p3);
+void _blink_led_loop(void *led, void *p2, void *p3);
 
 /* ----------------------------------------------------------------------------
                                 Global States
 ---------------------------------------------------------------------------- */
-static led_gpio _led_0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios), .name="LED0", .is_blinking=false};
-static led_gpio _led_1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios), .name="LED1", .is_blinking=false};
-static led_gpio _led_2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios), .name="LED2", .is_blinking=false};
-static led_gpio _led_3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios), .name="LED3", .is_blinking=false};
+static led_gpio _led0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios), .name="LED0", .is_blinking=false};
+static led_gpio _led1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios), .name="LED1", .is_blinking=false};
+static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios), .name="LED2", .is_blinking=false};
+static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios), .name="LED3", .is_blinking=false};
 static led_gpio *_leds[NUM_LEDS];
 
 K_THREAD_STACK_DEFINE(_blink_led0_stack, BLINK_LED_STACK_SIZE);
@@ -54,7 +54,7 @@ K_THREAD_STACK_DEFINE(_blink_led3_stack, BLINK_LED_STACK_SIZE);
                               Private Functions
 ---------------------------------------------------------------------------- */
 /**
- * @brief Configures a gpio spec as an led, returns 1 on failures
+ * @brief Configures a gpio spec as an led
  * 
  * @param [in] led the led_gpio object to configure
  * 
@@ -76,16 +76,16 @@ static int _config_led(const led_gpio *led) {
 /**
  * @brief Acts as a generic blink led thread
  * 
- * @param [in] led_instance The led instance to blink
+ * @param [in] led The led instance to blink
  * @param [in] p2 Unused thread parameter 2
  * @param [in] p2 Unused thread parameter 3
  */
-void _blink_led_loop(void *led_instance, void *p2, void *p3) {
-  led_inst _led_instance = (led_inst)(uintptr_t)led_instance;
-  int _frequency = (int)_leds[_led_instance]->frequency;
+void _blink_led_loop(void *led, void *p2, void *p3) {
+  led_id _led = (led_id)(uintptr_t)led;
+  int _frequency = (int)_leds[_led]->frequency;
 
   while (1) {
-    LED_toggle(_led_instance);
+    LED_toggle(_led);
     k_msleep(500 / _frequency);
   }
 }
@@ -99,10 +99,10 @@ void _blink_led_loop(void *led_instance, void *p2, void *p3) {
  * @return Error code, < 0 on failures
  */
 int LED_init() {
-  _leds[0] = &_led_0;
-  _leds[1] = &_led_1;
-  _leds[2] = &_led_2;
-  _leds[3] = &_led_3;
+  _leds[0] = &_led0;
+  _leds[1] = &_led1;
+  _leds[2] = &_led2;
+  _leds[3] = &_led3;
 
   for (uint8_t i = 0; i < NUM_LEDS; i++) {
     int rv = _config_led(_leds[i]);
@@ -112,8 +112,8 @@ int LED_init() {
     }
   }
 
-  _led_0.tid = k_thread_create(
-    &_led_0.thread,
+  _led0.tid = k_thread_create(
+    &_led0.thread,
     _blink_led0_stack,
     K_THREAD_STACK_SIZEOF(_blink_led0_stack),
     _blink_led_loop,
@@ -122,11 +122,11 @@ int LED_init() {
     0,
     K_NO_WAIT
   );
-  k_thread_suspend(_led_0.tid);
+  k_thread_suspend(_led0.tid);
   DEBUG("Initialized blink thread for LED0");
 
-  _led_1.tid = k_thread_create(
-    &_led_1.thread,
+  _led1.tid = k_thread_create(
+    &_led1.thread,
     _blink_led1_stack,
     K_THREAD_STACK_SIZEOF(_blink_led1_stack),
     _blink_led_loop,
@@ -135,11 +135,11 @@ int LED_init() {
     0,
     K_NO_WAIT
   );
-  k_thread_suspend(_led_1.tid);
+  k_thread_suspend(_led1.tid);
   DEBUG("Initialized blink thread for LED1");
 
-  _led_2.tid = k_thread_create(
-    &_led_2.thread,
+  _led2.tid = k_thread_create(
+    &_led2.thread,
     _blink_led2_stack,
     K_THREAD_STACK_SIZEOF(_blink_led2_stack),
     _blink_led_loop,
@@ -148,11 +148,11 @@ int LED_init() {
     0,
     K_NO_WAIT
   );
-  k_thread_suspend(_led_2.tid);
+  k_thread_suspend(_led2.tid);
   DEBUG("Initialized blink thread for LED2");
 
-  _led_3.tid = k_thread_create(
-    &_led_3.thread,
+  _led3.tid = k_thread_create(
+    &_led3.thread,
     _blink_led3_stack,
     K_THREAD_STACK_SIZEOF(_blink_led3_stack),
     _blink_led_loop,
@@ -161,7 +161,7 @@ int LED_init() {
     0,
     K_NO_WAIT
   );
-  k_thread_suspend(_led_3.tid);
+  k_thread_suspend(_led3.tid);
   DEBUG("Initialized blink thread for LED3");
 
   return 0;
@@ -170,18 +170,18 @@ int LED_init() {
 /**
  * @brief Toggle specified led
  * 
- * @param [in] led_instance The led instance to toggle
+ * @param [in] led The led instance to toggle
  * 
  * @return Error code, < 0 on failures
  */
-int LED_toggle(led_inst led_instance) {
-  if (led_instance >= NUM_LEDS || led_instance < 0) {
-    ERROR("Couldn't toggle invalid LED: LED%d", led_instance);
+int LED_toggle(led_id led) {
+  if (led >= NUM_LEDS || led < 0) {
+    ERROR("Couldn't toggle invalid LED: LED%d", led);
     return -EINVAL;
   } else {
-    int rv = gpio_pin_toggle_dt(&_leds[led_instance]->spec);
+    int rv = gpio_pin_toggle_dt(&_leds[led]->spec);
     if (rv) {
-      ERROR("Failed to toggle %s", _leds[led_instance]->name);
+      ERROR("Failed to toggle %s", _leds[led]->name);
     }
     return rv;
   }
@@ -190,26 +190,26 @@ int LED_toggle(led_inst led_instance) {
 /**
  * @brief Set specified led to given state
  * 
- * @param [in] led_instance The led instance to set
+ * @param [in] led The led instance to set
  * @param [in] new_state The state to set the led to
  * 
  * @return Error code, < 0 on failures
  */
-int LED_set(led_inst led_instance, led_state new_state) {
-  if (led_instance >= NUM_LEDS || led_instance < 0) {
-    ERROR("Couldn't set invalid LED: LED%d", led_instance);
+int LED_set(led_id led, led_state new_state) {
+  if (led >= NUM_LEDS || led < 0) {
+    ERROR("Couldn't set invalid LED: LED%d", led);
     return -EINVAL;
   }
   
-  if (_leds[led_instance]->is_blinking){
-    _leds[led_instance]->is_blinking = false;
-    k_thread_suspend(_leds[led_instance]->tid);
-    DEBUG("Successfully stopped %s blink thread", _leds[led_instance]->name);
+  if (_leds[led]->is_blinking){
+    _leds[led]->is_blinking = false;
+    k_thread_suspend(_leds[led]->tid);
+    DEBUG("Successfully stopped %s blink thread", _leds[led]->name);
   }
 
-  int rv = gpio_pin_set_dt(&_leds[led_instance]->spec, new_state);
+  int rv = gpio_pin_set_dt(&_leds[led]->spec, new_state);
   if (rv) {
-    ERROR("Failed to set %s", _leds[led_instance]->name);
+    ERROR("Failed to set %s", _leds[led]->name);
   }
   return rv;
 }
@@ -217,14 +217,14 @@ int LED_set(led_inst led_instance, led_state new_state) {
 /**
  * @brief Blinks the given LED at the given frequency
  * 
- * @param [in] led_instance The led instance to blink
+ * @param [in] led The led instance to blink
  * @param [in] frequency The frequency to blink the led at
  */
-void LED_blink(led_inst led_instance, led_frequency frequency) {
-  _leds[led_instance]->frequency = frequency;
-  if (!_leds[led_instance]->is_blinking) {
-    _leds[led_instance]->is_blinking = true;
-    k_thread_resume(_leds[led_instance]->tid);
-    DEBUG("Successfully started %s blink thread", _leds[led_instance]->name);
+void LED_blink(led_id led, led_frequency frequency) {
+  _leds[led]->frequency = frequency;
+  if (!_leds[led]->is_blinking) {
+    _leds[led]->is_blinking = true;
+    k_thread_resume(_leds[led]->tid);
+    DEBUG("Successfully started %s blink thread", _leds[led]->name);
   }
 }
