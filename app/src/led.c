@@ -7,8 +7,8 @@ Header to define led module logic
 /* ----------------------------------------------------------------------------
                                     CONSTANTS
 ---------------------------------------------------------------------------- */
-#define BLINK_LED_STACK_SIZE    4096
-#define BLINK_LED_PRIORITY      1
+#define LED_BLINK_STACK_SIZE    512
+#define LED_BLINK_PRIORITY      1
 
 #define LED0_NODE   DT_ALIAS(led0)
 #define LED1_NODE   DT_ALIAS(led1)
@@ -30,11 +30,11 @@ typedef struct led_gpio_t {
 /* ----------------------------------------------------------------------------
                             Private Function Prototypes
 ---------------------------------------------------------------------------- */
-static int _config_led(const led_gpio *led);
+static int _led_config(const led_gpio *led);
 
 void _suspend_blink_thread(led_id led);
 
-void _blink_led_loop(void *led, void *p2, void *p3);
+void _led_blink_loop(void *led, void *p2, void *p3);
 
 /* ----------------------------------------------------------------------------
                                 Global States
@@ -45,10 +45,10 @@ static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios), .name="LED2",
 static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios), .name="LED3", .is_blinking=false};
 static led_gpio *_leds[NUM_LEDS];
 
-K_THREAD_STACK_DEFINE(_blink_led0_stack, BLINK_LED_STACK_SIZE);
-K_THREAD_STACK_DEFINE(_blink_led1_stack, BLINK_LED_STACK_SIZE);
-K_THREAD_STACK_DEFINE(_blink_led2_stack, BLINK_LED_STACK_SIZE);
-K_THREAD_STACK_DEFINE(_blink_led3_stack, BLINK_LED_STACK_SIZE);
+K_THREAD_STACK_DEFINE(_led0_blink_stack, LED_BLINK_STACK_SIZE);
+K_THREAD_STACK_DEFINE(_led1_blink_stack, LED_BLINK_STACK_SIZE);
+K_THREAD_STACK_DEFINE(_led2_blink_stack, LED_BLINK_STACK_SIZE);
+K_THREAD_STACK_DEFINE(_led3_blink_stack, LED_BLINK_STACK_SIZE);
 
 /* ----------------------------------------------------------------------------
                               Private Functions
@@ -60,7 +60,7 @@ K_THREAD_STACK_DEFINE(_blink_led3_stack, BLINK_LED_STACK_SIZE);
  * 
  * @return Error code, < 0 on failures
  */
-static int _config_led(const led_gpio *led) {
+static int _led_config(const led_gpio *led) {
   if (!gpio_is_ready_dt(&led->spec)) {
     ERROR("%s was not ready during init.", led->name);
 		return -EIO;
@@ -80,7 +80,7 @@ static int _config_led(const led_gpio *led) {
  * @param [in] p2 Unused thread parameter 2
  * @param [in] p2 Unused thread parameter 3
  */
-void _blink_led_loop(void *led, void *p2, void *p3) {
+void _led_blink_loop(void *led, void *p2, void *p3) {
   led_id _led = (led_id)(uintptr_t)led;
   int _frequency = (int)_leds[_led]->frequency;
 
@@ -105,7 +105,7 @@ int LED_init() {
   _leds[3] = &_led3;
 
   for (uint8_t i = 0; i < NUM_LEDS; i++) {
-    int rv = _config_led(_leds[i]);
+    int rv = _led_config(_leds[i]);
     if (rv < 0) {
       ERROR("Failed to configure %s", _leds[i]->name);
       return rv;
@@ -114,11 +114,11 @@ int LED_init() {
 
   _led0.tid = k_thread_create(
     &_led0.thread,
-    _blink_led0_stack,
-    K_THREAD_STACK_SIZEOF(_blink_led0_stack),
-    _blink_led_loop,
+    _led0_blink_stack,
+    K_THREAD_STACK_SIZEOF(_led0_blink_stack),
+    _led_blink_loop,
     (void *)(uintptr_t)LED0, NULL, NULL,
-    BLINK_LED_PRIORITY,
+    LED_BLINK_PRIORITY,
     0,
     K_NO_WAIT
   );
@@ -127,11 +127,11 @@ int LED_init() {
 
   _led1.tid = k_thread_create(
     &_led1.thread,
-    _blink_led1_stack,
-    K_THREAD_STACK_SIZEOF(_blink_led1_stack),
-    _blink_led_loop,
+    _led1_blink_stack,
+    K_THREAD_STACK_SIZEOF(_led1_blink_stack),
+    _led_blink_loop,
     (void *)(uintptr_t)LED1, NULL, NULL,
-    BLINK_LED_PRIORITY,
+    LED_BLINK_PRIORITY,
     0,
     K_NO_WAIT
   );
@@ -140,11 +140,11 @@ int LED_init() {
 
   _led2.tid = k_thread_create(
     &_led2.thread,
-    _blink_led2_stack,
-    K_THREAD_STACK_SIZEOF(_blink_led2_stack),
-    _blink_led_loop,
+    _led2_blink_stack,
+    K_THREAD_STACK_SIZEOF(_led2_blink_stack),
+    _led_blink_loop,
     (void *)(uintptr_t)LED2, NULL, NULL,
-    BLINK_LED_PRIORITY,
+    LED_BLINK_PRIORITY,
     0,
     K_NO_WAIT
   );
@@ -153,11 +153,11 @@ int LED_init() {
 
   _led3.tid = k_thread_create(
     &_led3.thread,
-    _blink_led3_stack,
-    K_THREAD_STACK_SIZEOF(_blink_led3_stack),
-    _blink_led_loop,
+    _led3_blink_stack,
+    K_THREAD_STACK_SIZEOF(_led3_blink_stack),
+    _led_blink_loop,
     (void *)(uintptr_t)LED3, NULL, NULL,
-    BLINK_LED_PRIORITY,
+    LED_BLINK_PRIORITY,
     0,
     K_NO_WAIT
   );

@@ -9,7 +9,7 @@ Header to define constants and useful macros
 
 // Configs
 #define ERROR_LOGS  1
-#define DEBUG_LOGS  0
+#define DEBUG_LOGS  1
 
 // Logging
 #if ERROR_LOGS

@@ -7,7 +7,9 @@ Header to define button module logic
 /* ----------------------------------------------------------------------------
                                     CONSTANTS
 ---------------------------------------------------------------------------- */
-#define BTN_DEBOUNCE_MS   20
+#define BTN_DEBOUNCE_MS         8
+#define BTN_WORKQ_STACK_SIZE    512
+#define BTN_WORKQ_PRIORITY      5
 
 #define BTN0_NODE   DT_ALIAS(sw0)
 #define BTN1_NODE   DT_ALIAS(sw1)
@@ -22,23 +24,25 @@ typedef struct btn_gpio_t {
   char *name;
   bool pressed;
   struct gpio_callback cb;
-  uint64_t last_event;
+  struct k_work_delayable work;
 } btn_gpio;
 
 /* ----------------------------------------------------------------------------
                             Private Function Prototypes
 ---------------------------------------------------------------------------- */
-static int _config_btn(btn_gpio *btn);
+static int _btn_config(btn_gpio *btn);
 
 static void _btn_interrupt_service_routine(const struct device *dev, struct gpio_callback *cb, uint32_t pins);
+
+static void _btn_debounce(struct k_work *work);
 
 /* ----------------------------------------------------------------------------
                                 Global States
 ---------------------------------------------------------------------------- */
-static btn_gpio _btn0 = {.spec=GPIO_DT_SPEC_GET(BTN0_NODE, gpios), .name="BTN0", .pressed=false, .last_event=0};
-static btn_gpio _btn1 = {.spec=GPIO_DT_SPEC_GET(BTN1_NODE, gpios), .name="BTN1", .pressed=false, .last_event=0};
-static btn_gpio _btn2 = {.spec=GPIO_DT_SPEC_GET(BTN2_NODE, gpios), .name="BTN2", .pressed=false, .last_event=0};
-static btn_gpio _btn3 = {.spec=GPIO_DT_SPEC_GET(BTN3_NODE, gpios), .name="BTN3", .pressed=false, .last_event=0};
+static btn_gpio _btn0 = {.spec=GPIO_DT_SPEC_GET(BTN0_NODE, gpios), .name="BTN0", .pressed=false};
+static btn_gpio _btn1 = {.spec=GPIO_DT_SPEC_GET(BTN1_NODE, gpios), .name="BTN1", .pressed=false};
+static btn_gpio _btn2 = {.spec=GPIO_DT_SPEC_GET(BTN2_NODE, gpios), .name="BTN2", .pressed=false};
+static btn_gpio _btn3 = {.spec=GPIO_DT_SPEC_GET(BTN3_NODE, gpios), .name="BTN3", .pressed=false};
 static btn_gpio *_btns[NUM_BTNS];
 
 /* ----------------------------------------------------------------------------
@@ -51,7 +55,7 @@ static btn_gpio *_btns[NUM_BTNS];
  * 
  * @return Error code, < 0 on failures
  */
-static int _config_btn(btn_gpio *btn) {
+static int _btn_config(btn_gpio *btn) {
   if (!gpio_is_ready_dt(&btn->spec)) {
     ERROR("%s was not ready during init.", btn->name);
 		return -EIO;
@@ -64,6 +68,7 @@ static int _config_btn(btn_gpio *btn) {
   } else {
     gpio_init_callback(&btn->cb, _btn_interrupt_service_routine, BIT(btn->spec.pin));
     gpio_add_callback(btn->spec.port, &btn->cb);
+    k_work_init_delayable(&btn->work, _btn_debounce);
     DEBUG("Successfully configured %s", btn->name);
     return 0;
   }
@@ -77,8 +82,29 @@ static int _config_btn(btn_gpio *btn) {
  * @param [in] pins A bitmask for all the GPIO pins that triggered this interrupt
  */
 static void _btn_interrupt_service_routine(const struct device *dev, struct gpio_callback *cb, uint32_t pins) {
-  // TODO: Handle getting / releasing mutex
-  // TODO: Handle button debouncing using: k_uptime_get() to check time between current ISR and last ISR compared to BTN_DEBOUNCE_MS
+  DEBUG("Button ISR invoked!");
+  for (uint8_t i = 0; i < NUM_BTNS; i++) {
+    if (pins & BIT(_btns[i]->spec.pin)) {
+      // Reschedule the debounce response another BTN_DEBOUNCE_MS milliseconds
+      k_work_reschedule(&_btns[i]->work, K_MSEC(BTN_DEBOUNCE_MS));
+    }
+  }
+  return;
+}
+
+/**
+ * @brief Called once the button has been debounced, sets button pressed state
+ * 
+ * @param [in] work A k_work struct contained by a k_work_delayable inside a btn_gpio struct
+ */
+static void _btn_debounce(struct k_work *_work) {
+  struct k_work_delayable *dwork = CONTAINER_OF(_work, struct k_work_delayable, work);
+  btn_gpio *btn = CONTAINER_OF(dwork, btn_gpio, work);
+
+  if (gpio_pin_get_dt(&btn->spec)) {
+    btn->pressed = true;
+    DEBUG("%s just got pressed", btn->name);
+  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -96,7 +122,7 @@ int BTN_init() {
   _btns[3] = &_btn3;
 
   for (uint8_t i = 0; i < NUM_BTNS; i++) {
-    int rv = _config_btn(_btns[i]);
+    int rv = _btn_config(_btns[i]);
     if (rv < 0) {
       ERROR("Failed to configure %s", _btns[i]->name);
       return rv;
@@ -133,8 +159,11 @@ bool BTN_is_pressed(btn_id btn) {
  * @return true if btn has been pressed
  */
 bool BTN_was_pressed(btn_id btn) {
-  // TODO: Handle getting / releasing mutex
-  return false;
+  bool was_pressed = _btns[btn]->pressed;
+  if (was_pressed) {
+    _btns[btn]->pressed = false;
+  } 
+  return was_pressed;
 }
 
 /**
@@ -159,5 +188,9 @@ bool BTN_check_pressed(btn_id btn) {
  * @param [in] btn Which button to clear
  */
 void BTN_clear_pressed(btn_id btn) {
-  // TODO: Handle getting / releasing mutex
+  bool was_pressed = _btns[btn]->pressed;
+  if (was_pressed) {
+    _btns[btn]->pressed = false;
+  }
+  return;
 }
