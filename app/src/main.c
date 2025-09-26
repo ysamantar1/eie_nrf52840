@@ -18,6 +18,9 @@ int main(void)
     k_msleep(1);
     if (BTN_was_pressed(BTN0)) {
       LED_toggle(LED0);
+    } 
+    if (BTN_was_pressed(BTN1)) {
+      CONSOLE("Hello world!\n");
     }
   }
 	return 0;
