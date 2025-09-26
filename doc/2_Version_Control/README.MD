@@ -36,6 +36,18 @@ This is even more useful when working in groups,
 as all of your work gets stored and managed from a single, universal location,
 but everyone is still able to do anything they want to the files on their own computer.
 
+## Install VSCode
+
+Microsofts VSCode is the recommended IDE for EIE, however any other will also work.
+1. If you don't already have VSCode installed install it from [here](https://code.visualstudio.com/) and run the installer.
+2. Open git bash or the terminal
+3. Navigate to the project folder from lesson one. It should be in your user directory under `zephyr-projects/<project-name>` with project name defaulting to `eie_nrf52840.git`.
+4. Run `git fetch upstream main` and `git pull upstream main`
+5. Run `code .` to open vscode
+6. Navigate to the extensions tab on the left
+7. Type @recommended into the extension search bar
+8. Install every extension from the workplace recommendations
+
 ## Lesson
 
 The goal of this lesson is to become familiar enough with Git and GitHub to use them effectively throughout EiE.
