@@ -2,7 +2,7 @@
 Header to define led module logic
 */
 
-#include "led.h"
+#include "LED.h"
 
 /* ----------------------------------------------------------------------------
                                     CONSTANTS

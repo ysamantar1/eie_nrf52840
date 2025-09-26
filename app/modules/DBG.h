@@ -7,17 +7,16 @@ Header to define constants and useful macros
 
 #include "includes.h"
 
-// Configs
+// Error messages
 #define ERROR_LOGS  1
-#define DEBUG_LOGS  1
-
-// Logging
 #if ERROR_LOGS
 #define ERROR(fmt, ...) printk("Error: " fmt "\n", ##__VA_ARGS__)
 #else
 #define ERROR(...) do { } while (0)
 #endif
 
+// Debug messages
+#define DEBUG_LOGS  1
 #if DEBUG_LOGS
 #define DEBUG(fmt, ...) printk("Debug: " fmt "\n", ##__VA_ARGS__)
 #else

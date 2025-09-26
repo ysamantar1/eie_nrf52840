@@ -2,7 +2,7 @@
 Header to define button module logic
 */
 
-#include "btn.h"
+#include "BTN.h"
 
 /* ----------------------------------------------------------------------------
                                     CONSTANTS

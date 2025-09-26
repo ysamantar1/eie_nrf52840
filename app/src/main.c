@@ -3,8 +3,8 @@ Program entry point
 */
 
 #include "includes.h"
-#include "led.h"
-#include "btn.h"
+#include "LED.h"
+#include "BTN.h"
 
 int main(void)
 {

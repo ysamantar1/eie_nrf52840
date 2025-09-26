@@ -13,6 +13,6 @@ Header to include sources
 #include <zephyr/sys/printk.h>
 #include <inttypes.h>
 
-#include "defines.h"
+#include "DBG.h"
 
 #endif
