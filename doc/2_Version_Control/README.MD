@@ -143,16 +143,18 @@ GitHub disabled password authentication a while ago.
 Instead of a password, you need to use a "Personal Access Token".
 We can generate one as follows:
 
-1. Run `git config credential.helper 'store'` in your terminal
-2. On GitHub, go to your user settings
-3. Scroll down and select "Developer Settings" from the menu on the left
-4. Select "Personal Access Tokens" from the menu on the left
-5. Select "Tokens (classic)", then "Generate new token (classic)"
-6. Give the token a name like "Git Bash Laptop" or similar
-7. Set the expiration to either "90 days" or "No expiration"
+1. Run `git config --global user.name '<YOUR_NAME>'` in your terminal
+2. Run `git config --global user.email '<YOUR_GITHUB_EMAIL>'` in your terminal
+3. Run `git config credential.helper 'store'` in your terminal
+4. On GitHub, go to your user settings
+5. Scroll down and select "Developer Settings" from the menu on the left
+6. Select "Personal Access Tokens" from the menu on the left
+7. Select "Tokens (classic)", then "Generate new token (classic)"
+8. Give the token a name like "Git Bash Laptop" or similar
+9. Set the expiration to either "90 days" or "No expiration"
     1. If you set an expiration, you'll have to repeat this process after the token expires
-8. Check the "repo" tick box
-9. Hit "Generate"
-10. Copy the token from GitHub
-11. From the command line, run your `git push` command again, enter your username as normal, but instead of a password, press `ctrl+shft+V` to paste the access token
-12. Press enter, and everything should work!
+10. Check the "repo" tick box
+11. Hit "Generate"
+12. Copy the token from GitHub
+13. From the command line, run your `git push` command again, enter your username as normal, but instead of a password, press `ctrl+shft+V` to paste the access token
+14. Press enter, and everything should work!
