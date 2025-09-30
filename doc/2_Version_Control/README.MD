@@ -42,11 +42,12 @@ Microsofts VSCode is the recommended IDE for EIE, however any other will also wo
 1. If you don't already have VSCode installed install it from [here](https://code.visualstudio.com/) and run the installer.
 2. Open git bash or the terminal
 3. Navigate to the project folder from lesson one. It should be in your user directory under `zephyr-projects/<project-name>` with project name defaulting to `eie_nrf52840.git`.
-4. Run `git fetch upstream main` and `git pull upstream main`
-5. Run `code .` to open vscode
-6. Navigate to the extensions tab on the left
-7. Type @recommended into the extension search bar
-8. Install every extension from the workplace recommendations
+4. Add the upstream repository to your project. Run `git remote add upstream https://github.com/eiefirmware/eie_nrf52840.git`
+5. Run `git fetch upstream main` and `git pull upstream main`
+6. Run `code .` to open vscode
+7. Navigate to the extensions tab on the left
+8. Type @recommended into the extension search bar
+9. Install every extension from the workplace recommendations
 
 ## Lesson
 
