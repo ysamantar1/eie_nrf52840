@@ -1,9 +1,56 @@
 = Embedded Primer
 :doctype: article
 :imagesdir: imgs
-
 :toc:
 
+== Introduction
+This lesson is a primer on working with embedded systems and the Zephyr RTOS.
+Our goal is to complete the "Hello World" of embedded systems, blinking an LED from scratch.
+
+=== What is an Embedded System?
+Embedded systems are a small computer system that serves a specific purpose as part of a larger system.
+Typically they will have limited resources such as memory and program size.
+Most embedded systems use a microcontroller which is a type of microprocessor that includes integrated memory and peripherals on a single chip.
+We will be using the nRF52840 microcontroller in this course on the nRF52840 Development Kit provided by Nordic Semiconductor.
+
+.The nRF52840 Processor Block Diagram. Source Nordic Semiconductor <<nordic-block>>
+[]
+image::https://docs-be.nordicsemi.com/bundle/ps_nrf52840/page/chapters/blockdiagram/doc/image/block.nrf52840.svg[]
+
+=== General Purpose Input Output (GPIO)
+The General Purpose Input Output (GPIO) peripheral is one of the most common peripherals found on a microcontroller.
+It provides a way to read and write digital signals to and from the physical pins on the microcontroller.
+A pin controlled by the GPIO peripheral is referred to as a GPIO pin.
+These pins can be used to read a button, turn on an LED, control enable lines for other chips, and much more.
+
+To use one of the GPIO pins we first need to configure it.
+Configuring the pin typically involves setting various registers (Registers are a logic circuit that store a value).
+The GPIO pin configuration circuitry for the nRF52840 is shown below.
+
+.nRF52840 GPIO Pin Configuration Block Diagram. Source Nordic Semiconductor <<nordic-gpio>>
+[]
+image::https://docs-be.nordicsemi.com/bundle/ps_nrf52840/page/ip/gpio/doc/image/block.svg[]
+
+Each line coming into the configuration block represents the output of a bit from one of the control registers.
+Each register is mapped to an address in the microcontroller allowing the developer to read and write to the register using pointers.
+
+=== Zephyr RTOS
+When working with embedded systems we generally have two options for writing software.
+
+1. Write software that directly accesses the hardware registers to control the peripherals.
+2. Use a hardware abstraction layer (HAL) to abstract the low level details of the hardware.
+
+In general using a HAL is preferred as it makes the code easier to read, maintain, and port to other hardware.
+Zephyr provides a HAL and a real time operating system (RTOS) for the nRF52840 and many other microcontrollers that makes working with this hardware easier.
+
+==== Hardware Abstraction via the Device Tree
+The Zephyr project uses a data structure called a device tree to describe the microcontroller and the board it is on.
+The microcontroller device tree definition file defines all the peripherals in the microcontroller and the addresses of the registers to control them.
+The board device tree definition file describes how the microcontroller is connected to other components on the board such as LEDs, buttons, or sensors and what peripherals on the microcontroller they are connected to.
+We won't cover too much about the device tree but more information can be found in the Zephyr documentation.
+https://docs.zephyrproject.org/latest/build/dts/index.html
+
+Additionally Nordic's DevAcadamy introductory course on the nRF Connect SDK covers the device tree in more detail in link:https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-3-elements-of-an-nrf-connect-sdk-application/topic/configuration-files/[Lesson 3].
 
 == Lesson
 
@@ -25,7 +72,7 @@ Open the `app/prj.conf` file in your editor.
 We want to add a line to enable GPIO support in the application
 +
 image::prj_edits.png[]
-Nordic's DevAcadamy course on nRF Connect SDK fundamentals has
+Nordic's DevAcadamy course on nRF Connect SDK fundamentals covers more on kConfig including adding your own configuration options in link:https://academy.nordicsemi.com/courses/nrf-connect-sdk-fundamentals/lessons/lesson-3-elements-of-an-nrf-connect-sdk-application/topic/exercise-2/[Exercise 2 of Lesson 3].
 . CMake is a meta-build tool; That is it doesn't compile source files on its own but rather tells other tools what to build.
 In our case CMake pulls in the list of source file from the `CMakeLists.txt` file, the project configuration via the kConfig file `prj.conf` and the device tree files which describe the board and its peripherals.
 It then generates files used by the ninja build system which uses the GNU toolchain to compile the application.
@@ -111,6 +158,7 @@ In general in embedded systems we want the processor to be asleep as much as pos
 After adding the delay the code should look like this and the LED should blink.
 image::complete_main.png[]
 . Now we can build and flash the application to the board again and the LED should blink once per second.
++
 ----
 west build -b nrf52840dk/nrf52840 app
 west flash
@@ -136,4 +184,6 @@ git push origin embedded_primer
 [bibliography]
 == References
 
-* [[[nordic-build-system, 1]]] Nordic Semiconductor. _Build and Configuration System._ [Online]. Available: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/app_dev/config_and_build/config_and_build_system.html
+* [[[nordic-block, 1]]] Nordic Semiconductor. _Block Diagram._ [Online]. Available: https://docs.nordicsemi.com/bundle/ps_nrf52840/page/blockdiagram.html
+* [[[nordic-gpio, 2]]] Nordic Semiconductor. _GPIO - General purpose input/output._ [Online]. Available: https://docs.nordicsemi.com/bundle/ps_nrf52840/page/gpio.html
+* [[[nordic-build-system, 3]]] Nordic Semiconductor. _Build and Configuration System._ [Online]. Available: https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/app_dev/config_and_build/config_and_build_system.html
