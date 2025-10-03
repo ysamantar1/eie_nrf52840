@@ -179,7 +179,7 @@ Additionally Nordic's DevAcadamy introductory course on the nRF Connect SDK cove
 +
 ----
 git fetch upstream
-git checkout embedded_primer
+git checkout upstream embedded_primer
 ----
 . In the `app/` directory, create a new `src/` directory, as well as a new `main.c` file inside of `app/src/`. 
 . KConfig is a configuration system originally developed for linux kernel development.
