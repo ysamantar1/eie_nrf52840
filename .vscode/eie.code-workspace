@@ -9,9 +9,5 @@
     {
       "path": "../../zephyr/include"
     }
-  ],
-  "settings": {
-    "terminal.integrated.defaultProfile.windows": "Git Bash",
-    "python.terminal.activateEnvironment": true
-  }
+  ]
 }
