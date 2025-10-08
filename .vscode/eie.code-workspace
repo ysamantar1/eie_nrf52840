@@ -1,11 +1,17 @@
 {
-    "folders": [
-        {
-            "path": ".."
-        }
-    ],
-    "settings": {
-        "terminal.integrated.defaultProfile.windows": "Git Bash",
-        "python.terminal.activateEnvironment": true,
+  "folders": [
+    {
+      "path": ".."
     },
+    {
+      "path": "../../modules"
+    },
+    {
+      "path": "../../zephyr"
+    }
+  ],
+  "settings": {
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "python.terminal.activateEnvironment": true
+  }
 }
