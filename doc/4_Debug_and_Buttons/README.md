@@ -57,7 +57,7 @@ numbers, Latin alphabet letters and other common symbols to binary, here's a han
 
 ![](images/ASCII.png)  
 
-When you using a debug print statement with a serial interface, it converts the text you give to
+When you use a debug print statement with a serial interface, it converts the text you give to
 binary and transmits it in order to the receiver, who then decodes it back to text using the same
 standard and displays it to a *serial monitor*. A serial monitor is a program that runs on your
 computer and displays incoming serial data from a specific port. 
@@ -72,7 +72,8 @@ recommended serial monitor:
    ![](images/SerialMonitorExtension.png)  
 3. Open the terminal by hovering your mouse near the bottom of VSCode and pulling up once you see
    the arrow. Alternatively, select the three dots at the top-left of VSCode click 
-   "Terminal">"New Terminal"
+   "Terminal">"New Terminal" and in the tabs select "SERIAL MONITOR"
+4. Note you may need to restart VSCode or restart extensions to be able to see it as an option
 
 ### How to use it
 
@@ -92,7 +93,7 @@ printk("foo got bar as: %d", bar);
 
 ## Buttons
 
-Buttons are one of the core ways to get input from a user, and is one of the most basic ways a user
+Buttons are one of the core ways to get input from a user, and are one of the most basic ways a user
 can interact with any computer based system.
 
 ### How do you use a button?
@@ -119,7 +120,7 @@ When it comes to checking if a button is/has been pressed, there are two paradig
    stop whatever it is doing and go execute the associated ISR. Interrupts are crucial for embedded
    systems, as they allow them to respond to random events without wasting processing power by
    always being active and reading an input. With an interrupt-based program, you can put the
-   processor to sleep, and only do work when an interrupt is triggered, which would caus the 
+   processor to sleep, and only do work when an interrupt is triggered, which would cause the 
    processor to wake up so it can handle the event. To extend the previous metaphor, this is like
    putting a pie into the oven and then setting a timer - you can go do whatever you want without
    needing to constantly check the pie, and then when it's done you get alerted and can go deal
@@ -156,7 +157,7 @@ negative return values are typically used to convey error codes.
 3. Next, configure the button variable you just got in step 2. Remember you first need to check if
    the port is ready to be configured:  
    ![](images/ConfigureGpioSpec.png)  
-   - Note: when when checking the return value from gpio_pin_configure_dt, the order of
+   - Note: when checking the return value from gpio_pin_configure_dt, the order of
      arguments are reversed from what you're probably used to: `ret < 0` vs `0 > ret`. This is sometimes called
      "Yoda notation" and it prevents accidental assignment instead of comparison. For example, if
      you wanted to check if `my_int` is equal to 5, you might use `if (my_int == 5) { /* do thing */ }`,
@@ -165,7 +166,9 @@ negative return values are typically used to convey error codes.
      contents of the if block are always executed - even when `my_int` wasn't equal to 5! Now, if
      you swap the order and instead use `if (5 == my_int) { /* do thing */ }` as a habit, whenever
      you accidentally forget the second equals sign (`if (5 = my_int) { /* do thing */ }`), you'll 
-     get a compiler error instead!
+     get a compiler error instead! It's always good practice in programming to try to fail as early as
+     possible, rather than having buggy code sitting and waiting to make something fail when you
+     least expect it.
 4. Now you can use `gpio_pin_get_dt` to check the state of the button, and call printk when it's pressed!  
    ![](images/PollButton.png)  
 5. Build and flash your board with the code you just created  
@@ -179,7 +182,7 @@ negative return values are typically used to convey error codes.
      corresponds to button 0 in zephyr, BUTTON 2 corresponds to button 1 and so on)
 7. Do you see anything odd?
    - The gibberish you see on the serial monitor means that it doesn't understand how to read the
-     data it's getting because it's not receiving data at the same rate the data is being sent!
+     data it's getting
    - This is because in order for serial communication protocols to work, both sides (Tx and Rx)
      need to agree on the parameters of the communication, these are things like character encoding,
      parity and baud rate. Let's focus on baud rate: baud rate is how fast the communication
@@ -200,7 +203,7 @@ What method of button reading was used here?
 
 Let's make a program that prints something to the console whenever the interrupt is triggered:
 
-1. Start by making a function that you want to be called when your interrupt is triggered:  
+1. Start by making a function that you want to be called when your interrupt is triggered (button_isr in this example):  
    ![](images/DefineIsr.png)  
    - You may be wondering why I chose such "random" parameters for the ISR, I used these parameters
      because they match the function signature Zephyr is expecting for an interrupt service routine.
@@ -239,15 +242,15 @@ cause multiple print statements?
 
 Unfortunately, buttons aren't perfect and the metal contacts inside of them aren't exactly flat. Because of this,
 when you click a button, the metal contacts "bounce" very quickly several times before they make consistent contact.
-Using an oscilloscope, we can see exactly what this looks like:
+Using an oscilloscope, we can see exactly what this looks like:  
 ![](images/BounceScope.png)  
-Image from: https://hackaday.com/2015/12/09/embed-with-elliot-debounce-your-noisy-buttons-part-i/ which is an
-  excellent source on button bouncing and how to debounce.
+(Image from: https://hackaday.com/2015/12/09/embed-with-elliot-debounce-your-noisy-buttons-part-i/ which is an
+  excellent source on button bouncing and how to debounce.)
 
 Notice how the button voltage (high == on, low == off) jumps several times before it ever stabilizes? This is
 what's causing our problem with seeing multiple print statements each time it's clicked! Sometimes the jumps
 are high enough that they cross the voltage threshold needed to count as an "edge to active" and trigger
-the interrupt, but sometimes they don't, and that's why you only see it get printing multiple times *sometimes*
+the interrupt, but sometimes they don't, and that's why you only see it get printing multiple times *sometimes*.
 
 There's lots of ways you can fix this, but the simplest way boils down to a debounce delay, here's how it works:
 The button gets clicked and bounces, when the first edge to active is hit interrupts get disabled for some
@@ -304,7 +307,7 @@ your changes to the debug_buttons branch of your repository.
 
 - Create a password system that uses BTN0, BTN1, BTN2 as inputs, and BTN3 as the "enter" button.
    The program should start in a locked state with LED0 turned on. The user should be able to click
-   a combination of BTN0, BTN1, BTn2 (that you choose at compile time) as the passkey entry stage.
+   a combination of BTN0, BTN1, BTN2 (that you choose at compile time) as the passkey entry stage.
    Once the user clicks BTN3, "Correct!" should be printed if the password was correct, and "Incorrect!" 
    should be printed if the password was wrong. After the user entered their password with BTN3, LED0 
    should turn off and your program should enter a "waiting" state. The user should be able to press 
@@ -313,7 +316,7 @@ your changes to the debug_buttons branch of your repository.
 
 *Challenge*  
 - When the board starts, turn LED3 on for 3 seconds. During those 3 seconds, the user should be able
-   to click BTN3, which puts the program into an "entry" mode that allows the user to enter a password
-   of their choice by entering a sequence of BTN0, BTN1, BTN2. Once they click BTN3, the password should
-   be saved, and the program should enter the locked state, where it should function the same way as
-   part 1 of this exercise.
+   to click BTN3, which puts the program into an "entry" mode until BTN3 is clicked again. The user should be
+   able to enter a password of their choice by entering a sequence of BTN0, BTN1, BTN2. Once they click BTN3, 
+   the password should be saved, and the program should enter the locked state, where it should function the 
+   same way as part 1 of this exercise.
