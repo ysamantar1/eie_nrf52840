@@ -302,7 +302,7 @@ Build this and flash it to your board. Now click the button 15 times and count h
 Create seperate git commits for each part of the exercise, once you're done this lesson push
 your changes to the debug_buttons branch of your repository.
 
-1. Create a password system that uses BTN0, BTN1, BTN2 as inputs, and BTN3 as the "enter" button.
+- Create a password system that uses BTN0, BTN1, BTN2 as inputs, and BTN3 as the "enter" button.
    The program should start in a locked state with LED0 turned on. The user should be able to click
    a combination of BTN0, BTN1, BTn2 (that you choose at compile time) as the passkey entry stage.
    Once the user clicks BTN3, "Correct!" should be printed if the password was correct, and "Incorrect!" 
@@ -311,8 +311,8 @@ your changes to the debug_buttons branch of your repository.
    any button to reset the program back to its locked state while it's in the waiting state, and the 
    program should be able to be used again.
 
-*Challenge*
-2. When the board starts, turn LED3 on for 3 seconds. During those 3 seconds, the user should be able
+*Challenge*  
+- When the board starts, turn LED3 on for 3 seconds. During those 3 seconds, the user should be able
    to click BTN3, which puts the program into an "entry" mode that allows the user to enter a password
    of their choice by entering a sequence of BTN0, BTN1, BTN2. Once they click BTN3, the password should
    be saved, and the program should enter the locked state, where it should function the same way as
