@@ -9,8 +9,13 @@
     - [Installing and using the VSCode serial monitor](#installing-and-using-the-vscode-serial-monitor)
     - [How to use it](#how-to-use-it)
   - [Buttons](#buttons)
-    - [How do we use a button?](#how-do-we-use-a-button)
+    - [How do you use a button?](#how-do-you-use-a-button)
   - [Lesson](#lesson)
+    - [Basic gpio reading](#basic-gpio-reading)
+    - [Using interrupts](#using-interrupts)
+    - [Button bouncing](#button-bouncing)
+    - [Button APIs](#button-apis)
+      - [Example program:](#example-program)
 
 ## Introduction
 
@@ -41,7 +46,7 @@ consider when working with our serial interface:
    Responsible for listening to incoming data from a transmitter. Note that "receive"/"receiver" is
    commonly abbreviated to "Rx".
    
-We call it a "serial" interface because it sends data in serial: one bit after another in a strict
+It's called a "serial" interface because it sends data in serial: one bit after another in a strict
 order (note that this is where USB gets its name: Universal Serial Bus).
 
 Now you might be asking: "how do words get converted to bits?" The answer: *ASCII* (*for the most part)
@@ -49,7 +54,7 @@ Now you might be asking: "how do words get converted to bits?" The answer: *ASCI
 ASCII (American Standard Code for Information Interchange) is an encoding standard for converting
 numbers, Latin alphabet letters and other common symbols to binary, here's a handy table:
 
-![](images/ASCII.png)
+![](images/ASCII.png)  
 
 When you using a debug print statement with a serial interface, it converts the text you give to
 binary and transmits it in order to the receiver, who then decodes it back to text using the same
@@ -59,11 +64,11 @@ computer and displays incoming serial data from a specific port.
 ### Installing and using the VSCode serial monitor
 
 All serial monitors effectively do the same thing, so you're welcome to use any serial monitor you
-like if you already have a preference. Otherwise, we recommend you follow these steps to use our
+like if you already have a preference. Otherwise, it's recommended you follow these steps to use our
 recommended serial monitor:
 1. Open VSCode and click the "Extensions" menu in the left sidebar
 2. Search "Serial Monitor" and install the extension by Microsoft  
-   ![](images/SerialMonitorExtension.png)
+   ![](images/SerialMonitorExtension.png)  
 3. Open the terminal by hovering your mouse near the bottom of VSCode and pulling up once you see
    the arrow. Alternatively, select the three dots at the top-left of VSCode click 
    "Terminal">"New Terminal"
@@ -86,10 +91,10 @@ printk("foo got bar as: %d", bar);
 
 ## Buttons
 
-Buttons are one of the core ways we get input from a user, and is one of the most basic ways a user
+Buttons are one of the core ways to get input from a user, and is one of the most basic ways a user
 can interact with any computer based system.
 
-### How do we use a button?
+### How do you use a button?
 
 Similar to LEDs, to use a button you first need to:
 1. Initialize it:  
@@ -112,7 +117,7 @@ When it comes to checking if a button is/has been pressed, there are two paradig
    an *Interrupt Service Routine* (ISR). When the event you specified occurs, the processor will
    stop whatever it is doing and go execute the associated ISR. Interrupts are crucial for embedded
    systems, as they allow them to respond to random events without wasting processing power by
-   always being active and reading an input. With an interrupt-based program, we can put the
+   always being active and reading an input. With an interrupt-based program, you can put the
    processor to sleep, and only do work when an interrupt is triggered, which would caus the 
    processor to wake up so it can handle the event. To extend the previous metaphor, this is like
    putting a pie into the oven and then setting a timer - you can go do whatever you want without
@@ -130,9 +135,11 @@ git checkout debug_buttons
 As an aside before we get too far into the lesson: a helpful thing to know about Zephyr is that
 negative return values are typically used to convey error codes.
 
+### Basic gpio reading
+
 1. Go to app/src/main.c, you'll notice there are a few libraries included that will be helpful for
-   this lesson, but that the main function is otherwise empty. 
-   ![](images/EmptyMain.png)
+   this lesson, but that the main function is otherwise empty.   
+   ![](images/EmptyMain.png)  
    - <zephyr/kernel.h> includes kernel functions like k_msleep
    - <zephyr/device.h> includes the device struct used in gpio_dt_spec
    - <zephyr/drivers/gpio.h> includes all the gpio_* functions and types 
@@ -140,39 +147,38 @@ negative return values are typically used to convey error codes.
        "gpio_"
    - <zephyr/sys/printk.h> includes the printk function
    - <stdint.h> includes fixed sized integer types like uint8_t and sint32_t
-2. Start by initializing the `gpio_dt_spec` struct for button 0 from the device tree
-   ![](images/InitializeGpioSpec.png)
+2. Start by initializing the `gpio_dt_spec` struct for button 0 from the device tree  
+   ![](images/InitializeGpioSpec.png)  
    Remember that this is going to the device tree (the abstraction layer that maps boards to the
    peripherals they actually support) and initializing a gpio_dt_spec struct from what it finds
    there.
-3. Next, configure the button variable we just got in step 2. Remember we first need to check if
-   the port is ready to be configured:
-   ![](images/ConfigureGpioSpec.png)
-   - Note: when I'm checking the return value from gpio_pin_configure_dt, I reversed the order of
-     arguments from what you might be used to: `ret < 0` vs `0 > ret`. This is sometimes called
+3. Next, configure the button variable you just got in step 2. Remember you first need to check if
+   the port is ready to be configured:  
+   ![](images/ConfigureGpioSpec.png)  
+   - Note: when when checking the return value from gpio_pin_configure_dt, the order of
+     arguments are reversed from what you're probably used to: `ret < 0` vs `0 > ret`. This is sometimes called
      "Yoda notation" and it prevents accidental assignment instead of comparison. For example, if
-     I wanted to check if `my_int` is equal to 5, I might use `if (my_int == 5) { /* do thing */ }`,
-     but what if I forget the second equal sign, and type `if (my_int = 5) { /* do thing */ }` instead?
+     you wanted to check if `my_int` is equal to 5, you might use `if (my_int == 5) { /* do thing */ }`,
+     but what if you forget the second equal sign, and type `if (my_int = 5) { /* do thing */ }` instead?
      What would happen is that the assignment of 5 to `my_int` always evaluates to true, and the
-     contents of the if block are always executed - even when `my_int` isn't equal to 5! Now, if
+     contents of the if block are always executed - even when `my_int` wasn't equal to 5! Now, if
      you swap the order and instead use `if (5 == my_int) { /* do thing */ }` as a habit, whenever
      you accidentally forget the second equals sign (`if (5 = my_int) { /* do thing */ }`), you'll 
-     get a compiler error instead! This doesn't really apply in the case of comparison operators
-     (<, <=, >, >=), but it's still a good habit to get into!
-4. Now we can use `gpio_pin_get_dt` to check the state of the button, and call printk when it's pressed!
-   ![](images/PollButton.png)
+     get a compiler error instead!
+4. Now you can use `gpio_pin_get_dt` to check the state of the button, and call printk when it's pressed!  
+   ![](images/PollButton.png)  
 5. Build and flash your board with the code you just created  
    - *Remember: to build use* `west build -b nrf52840dk/nrf52840 app`, *to flash use* `west flash`
 6. Open the serial monitor:
    - Select the COM port that your dev board is plugged into (it will say "JLink" in the port name)
    - Set the baud rate to 74880
-   - Select "Start Monitoring"
-     ![](images/SerialMonitorSettings.png)
+   - Select "Start Monitoring"  
+     ![](images/SerialMonitorSettings.png)  
    - Hold down the button on the dev board that says "BUTTON 1" (note that BUTTON 1 actually
      corresponds to button 0 in zephyr, BUTTON 2 corresponds to button 1 and so on)
 7. Do you see anything odd?
    - The gibberish you see on the serial monitor means that it doesn't understand how to read the
-     data it's getting
+     data it's getting because it's not receiving data at the same rate the data is being sent!
    - This is because in order for serial communication protocols to work, both sides (Tx and Rx)
      need to agree on the parameters of the communication, these are things like character encoding,
      parity and baud rate. Let's focus on baud rate: baud rate is how fast the communication
@@ -181,3 +187,113 @@ negative return values are typically used to convey error codes.
      receiver is sampling at, you'll see random characters like you just saw. To fix this, change
      the baud rate to 115200. Now you should see "Pressed!" every second the button is held. Note
      that 115200 is the default baud rate this board uses.
+8. Now add a bit of functionality to your program by having one of the LEDs turn on while the
+   button is pressed, and be off otherwise. What do you notice happens when you change how long the
+   board sleeps between loops?
+
+What method of button reading was used here?
+
+**Before continuing, make sure you understand the previous example**
+
+### Using interrupts
+
+Let's make a program that prints something to the console whenever the interrupt is triggered:
+
+1. Start by making a function that you want to be called when your interrupt is triggered:  
+   ![](images/DefineIsr.png)  
+   - You may be wondering why I chose such "random" parameters for the ISR, I used these parameters
+     because they match the function signature Zephyr is expecting for an interrupt service routine.
+     Remember that C is a statically typed language, so Zephyr is constrained to only allow functions
+     that exactly match that signature to be used (otherwise it won't even compile!). Lucky for us,
+     these parameters can be really useful for writing our ISR. The device struct pointer is the GPIO
+     port device that triggered the interrupt, and the pins parameter is a bitmask of the pin that
+     (on the port specified by the device pointer) triggered the interrupt. The gpio_callback struct
+     is useful for bundling relevant callback data and it even allows you to pass data into the 
+     interrupt using some special macros, but we won't worry about all that for now.
+      - Note: a bitmask is a special binary integer encoding that assigns each bit of an integer
+        a special meaning. In this case, it means that each pin on the given port is given a specific
+        bit in the "pins" parameter, and we can check which bit is set (== 1) to see which pin 
+        caused the interrupt. Bitmasks are used to tightly pack information into an integer format,
+        but note that bitmasks shouldn't be interpreted as a number, but as a bundle of individual flags.
+2. Now allocate a static gpio_callback struct instance that will hold the callback data for your
+   interrupt and configure and init your interrupt:  
+   ![](images/CompletedInterruptMain.png)  
+   - Here, we're configuring the button to trigger an interrupt when the button transitions from being
+     not pressed to being pressed (AKA a "rising edge" interrupt), and we're passing the ISR function
+     we defined to the gpio_init_callback function so it can store it internally and call it when
+     the interrupt is triggered.
+   - Note: "callback" refers to a function that gets passed somewhere within the program and called
+     at a later point (because in C, you can pass around pointers to functions), in this case it means 
+     the same thing as an interrupt.
+   - Note that because our program is interrupt based, we don't even need anything in the main loop as our
+     code will be executed every time an interrupt event occurs!
+3. Build and flash your board with the program and connect it to the serial monitor. 
+4. Now click the button 15 times and count how many times you see "Button 0 pressed!" printed to the console. 
+   Is this what you expected?
+
+The program isn't malfunctioning, in fact it's doing exactly what you told it to, so why do some button clicks
+cause multiple print statements?
+
+### Button bouncing
+
+Unfortunately, buttons aren't perfect and the metal contacts inside of them aren't exactly flat. Because of this,
+when you click a button, the metal contacts "bounce" very quickly several times before they make consistent contact.
+Using an oscilloscope, we can see exactly what this looks like:
+![](images/BounceScope.png)  
+Image from: https://hackaday.com/2015/12/09/embed-with-elliot-debounce-your-noisy-buttons-part-i/ which is an
+  excellent source on button bouncing and how to debounce.
+
+Notice how the button voltage (high == on, low == off) jumps several times before it ever stabilizes? This is
+what's causing our problem with seeing multiple print statements each time it's clicked! Sometimes the jumps
+are high enough that they cross the voltage threshold needed to count as an "edge to active" and trigger
+the interrupt, but sometimes they don't, and that's why you only see it get printing multiple times *sometimes*
+
+There's lots of ways you can fix this, but the simplest way boils down to a debounce delay, here's how it works:
+The button gets clicked and bounces, when the first edge to active is hit interrupts get disabled for some
+debounce delay (typically between 10 - 50ms). After the delay is over, they get turned back on, and the state of
+the button is checked, if it's high at that point (i.e. the button is pressed) then this counts as a single 
+click, and a flag is set somewhere in your program. The strategy here is to wait out the initial instability
+and then check once things have stabilized. Different buttons have different bouncing durations, so it's 
+important to keep that in mind when writing a debouncing system.
+
+Because debouncing buttons can be complicated, we'll provide you with some functions you can use 
+that handle debouncing internally. They live in app/modules/BTN/btn.c, so feel free to take a look
+at how the debouncing works, but don't worry if it doesn't make much sense either. Usually, we
+refer to one or more functions that give you an interface into a module as "APIs" or
+*Application Programmer Interfaces*.
+
+### Button APIs
+
+Here's a rundown of how the APIs we'll provide work:
+
+1. To use the button APIs, you need to include "BTN.h" in your main.c file
+   - Note that here, capital letters in the header name indicate this is a "public" header, and that
+     you can use the functions and types declared there freely. You'll notice the implementation file
+     is called "btn.c", this is because it's intended to be private to enfore encapsulation (modularity)
+2. You then need to initialize the button module by calling `BTN_init` somewhere before your main loop,
+   you also need to check the return value of `BTN_init` in the event that it failed
+3. In your program, there are 4 APIs you can call to check the state of a button:
+    - `BTN_is_pressed`: Returns true if the given button is currently being pressed
+    - `BTN_was_pressed`: Returns true if the given button has been pressed since you last checked
+      its internal flag, clears the internal flag upon returning
+    - `BTN_check_pressed`: Returns true if the given button has been pressed since you last checked
+      its internal flag, does not clear the internal flag upon returning
+    - `BTN_clear_pressed`: Returns nothing, clears the internal state flag of the given button  
+  You pick which button to pass these functions by using `BTNx` where x is the button number
+
+`BTN_check_pressed` and `BTN_clear_pressed` are provided to give you more flexibility, but in most
+cases you will find that using either `BTN_is_pressed` or `BTN_was_pressed` will be all that you need.
+
+We wanted you to get a hands-on experience using the buttons as a raw gpio_dt_spec with the
+Zephyr gpio APIs before we gave you our advanced APIs that handle all the complexity internally. This
+is because it's crucial to understanding how buttons are handled at a (somewhat) low level. However
+from now on you can use the simplified APIs that we provide.
+
+#### Example program:
+
+Here is an example program:  
+![](images/ExampleMainWithBtnApi.png)  
+Build this and flash it to your board. Now click the button 15 times and count how many times
+"Button 0 pressed!" got printed, do you still see bouncing?
+
+**TODO: plan exercises**
