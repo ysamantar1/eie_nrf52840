@@ -32,7 +32,6 @@ typedef struct led_blink_t {
 
 typedef struct led_gpio_t {
   struct gpio_dt_spec spec; 
-  char *name;
   led_blink blink;
 } led_gpio;
 
@@ -52,10 +51,10 @@ void _led_blink_loop(void *led, void *p2, void *p3);
 /* ----------------------------------------------------------------------------
                                 Global States
 ---------------------------------------------------------------------------- */
-static led_gpio _led0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios), .name="LED0"};
-static led_gpio _led1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios), .name="LED1"};
-static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios), .name="LED2"};
-static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios), .name="LED3"};
+static led_gpio _led0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios)};
+static led_gpio _led1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios)};
+static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios)};
+static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios)};
 static led_gpio *_leds[NUM_LEDS];
 
 static blink_thread _led_blink_thread = {.led_bitmask=0};

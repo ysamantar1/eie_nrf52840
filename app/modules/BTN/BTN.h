@@ -25,7 +25,7 @@ int BTN_init();
 
 bool BTN_is_pressed(btn_id btn);
 
-bool BTN_was_pressed(btn_id btn);
+bool BTN_check_clear_pressed(btn_id btn);
 
 bool BTN_check_pressed(btn_id btn);
 
