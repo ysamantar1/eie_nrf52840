@@ -11,10 +11,11 @@
   - [Buttons](#buttons)
     - [How do you use a button?](#how-do-you-use-a-button)
   - [Lesson](#lesson)
-    - [Basic gpio reading](#basic-gpio-reading)
-    - [Using interrupts](#using-interrupts)
+    - [Basic gpio reading on Zephyr](#basic-gpio-reading-on-zephyr)
+    - [Using interrupts on Zephyr](#using-interrupts-on-zephyr)
     - [Button bouncing](#button-bouncing)
-    - [Button APIs](#button-apis)
+    - [EiE Button APIs](#eie-button-apis)
+    - [EiE LED APIs](#eie-led-apis)
       - [Example program:](#example-program)
   - [Exercises](#exercises)
 
@@ -137,7 +138,7 @@ git checkout debug_buttons
 As an aside before we get too far into the lesson: a helpful thing to know about Zephyr is that
 negative return values are typically used to convey error codes.
 
-### Basic gpio reading
+### Basic gpio reading on Zephyr
 
 1. Go to app/src/main.c, you'll notice there are a few libraries included that will be helpful for
    this lesson, but that the main function is otherwise empty.   
@@ -191,15 +192,12 @@ negative return values are typically used to convey error codes.
      receiver is sampling at, you'll see random characters like you just saw. To fix this, change
      the baud rate to 115200. Now you should see "Pressed!" every second the button is held. Note
      that 115200 is the default baud rate this board uses.
-8. Now add a bit of functionality to your program by having one of the LEDs turn on while the
-   button is pressed, and be off otherwise. What do you notice happens when you change how long the
-   board sleeps between loops?
 
 What method of button reading was used here?
 
 **Before continuing, make sure you understand the previous example**
 
-### Using interrupts
+### Using interrupts on Zephyr
 
 Let's make a program that prints something to the console whenever the interrupt is triggered:
 
@@ -228,7 +226,7 @@ Let's make a program that prints something to the console whenever the interrupt
      the interrupt is triggered.
    - Note: "callback" refers to a function that gets passed somewhere within the program and called
      at a later point (because in C, you can pass around pointers to functions), in this case it means 
-     the same thing as an interrupt.
+     the same thing as an interrupt service routine.
    - Note that because our program is interrupt based, we don't even need anything in the main loop as our
      code will be executed every time an interrupt event occurs!
 3. Build and flash your board with the program and connect it to the serial monitor. 
@@ -250,7 +248,7 @@ Using an oscilloscope, we can see exactly what this looks like:
 Notice how the button voltage (high == on, low == off) jumps several times before it ever stabilizes? This is
 what's causing our problem with seeing multiple print statements each time it's clicked! Sometimes the jumps
 are high enough that they cross the voltage threshold needed to count as an "edge to active" and trigger
-the interrupt, but sometimes they don't, and that's why you only see it get printing multiple times *sometimes*.
+the interrupt, but sometimes they don't, and that's why you only it only prints multiple times *sometimes*.
 
 There's lots of ways you can fix this, but the simplest way boils down to a debounce delay, here's how it works:
 The button gets clicked and bounces, when the first edge to active is hit interrupts get disabled for some
@@ -266,37 +264,57 @@ at how the debouncing works, but don't worry if it doesn't make much sense eithe
 refer to one or more functions that give you an interface into a module as "APIs" or
 *Application Programmer Interfaces*.
 
-### Button APIs
+### EiE Button APIs
 
 Here's a rundown of how the APIs we'll provide work:
 
 1. To use the button APIs, you need to include "BTN.h" in your main.c file
    - Note that here, capital letters in the header name indicate this is a "public" header, and that
      you can use the functions and types declared there freely. You'll notice the implementation file
-     is called "btn.c", this is because it's intended to be private to enfore encapsulation (modularity)
+     is called "btn.c", this is because it's intended to be private to enfore encapsulation (modularity). 
+     A "private" function is one that you aren't supposed to use since it's not made to be called outside
+     a very specific context.
 2. You then need to initialize the button module by calling `BTN_init` somewhere before your main loop,
-   you also need to check the return value of `BTN_init` in the event that it failed
-3. In your program, there are 4 APIs you can call to check the state of a button:
-    - `BTN_is_pressed`: Returns true if the given button is currently being pressed
-    - `BTN_was_pressed`: Returns true if the given button has been pressed since you last checked
+   you also need to check the return value of `BTN_init` in the event that it failed (remember that
+   error codes are negative by convention on Zephyr)
+3. In your program, there are 4 APIs you can call:
+    - `bool BTN_is_pressed(btn_id btn)`: Returns true if the given button is currently being pressed
+    - `bool BTN_check_clear_pressed(btn_id btn)`: Returns true if the given button has been pressed since you last checked
       its internal flag, clears the internal flag upon returning
-    - `BTN_check_pressed`: Returns true if the given button has been pressed since you last checked
+    - `bool BTN_check_pressed(btn_id btn)`: Returns true if the given button has been pressed since you last checked
       its internal flag, does not clear the internal flag upon returning
-    - `BTN_clear_pressed`: Returns nothing, clears the internal state flag of the given button  
-  You pick which button to pass these functions by using `BTNx` where x is the button number
+    - `void BTN_clear_pressed(btn_id btn)`: Returns nothing, clears the internal state flag of the given button  
+  You pick which button to pass these functions by using `BTNx` where x is the button number (0 - 3 on nRF52840dk)
 
 `BTN_check_pressed` and `BTN_clear_pressed` are provided to give you more flexibility, but in most
-cases you will find that using either `BTN_is_pressed` or `BTN_was_pressed` will be all that you need.
+cases you will find that using either `BTN_is_pressed` or `BTN_check_clear_pressed` will be all that you need.
 
 We wanted you to get a hands-on experience using the buttons as a raw gpio_dt_spec with the
 Zephyr gpio APIs before we gave you our advanced APIs that handle all the complexity internally. This
 is because it's crucial to understanding how buttons are handled at a (somewhat) low level. However
 from now on you can use the simplified APIs that we provide.
 
+### EiE LED APIs
+
+In addition to the simpler button APIs, we'll also provide a simplified LED API:
+
+1. To use LED APIs, you need to include "LED.h" in your main.c file (not the same public/private naming convention)
+2. You then need to initialize the LED module by calling `LED_init`, also remembering to check the return value
+   in case something failed
+3. In your program, there are 3 APIs you can call:
+    - `int LED_toggle(led_id led)`: Returns 0 on success, toggles the given LED's state
+    - `int LED_set(led_id led, led_state new_state)`: Returns 0 on success, sets the given LED's state to new_state
+      (new_state can be either LED_ON or LED_OFF)
+    - `void LED_blink(led_id led, led_frequency frequency)`: No return value, starts blinking the given LED
+      at the specified frequency (LED_1HZ, LED_2HZ, LED_4HZ, LED_8HZ, LED_16HZ). This is a non-blocking function, 
+      meaning it returns immediately and handles blinking the LED separately.
+  You pick which LED to pass these functions by using `LEDx` where x is the LED number (0 - 3 on nRF52840dk)
+
 #### Example program:
 
 Here is an example program:  
 ![](images/ExampleMainWithBtnApi.png)  
+Before running it, can you see what this program will do?  
 Build this and flash it to your board. Now click the button 15 times and count how many times
 "Button 0 pressed!" got printed, do you still see bouncing?
 
@@ -305,19 +323,21 @@ Build this and flash it to your board. Now click the button 15 times and count h
 Create seperate git commits for each part of the exercise, once you're done this lesson push
 your changes to the debug_buttons branch of your repository.
 
-- 
+- Create a 4 bit binary counter using all 4 LEDs. An LED being off should represent a binary 0,
+  and an LED being on should represent a binary 1. The internal counter should increment each time
+  BTN0 is pressed. The LEDs should reset once the internal counter reaches 16.
 
-- Create a password system that uses BTN0, BTN1, BTN2 as inputs, and BTN3 as the "enter" button.
+**Challenge:**  
+1. Create a password system that uses BTN0, BTN1, BTN2 as inputs, and BTN3 as the "enter" button.
    The program should start in a locked state with LED0 turned on. The user should be able to click
    a combination of BTN0, BTN1, BTN2 (that you choose at compile time) as the passkey entry stage.
    Once the user clicks BTN3, "Correct!" should be printed if the password was correct, and "Incorrect!" 
    should be printed if the password was wrong. After the user entered their password with BTN3, LED0 
    should turn off and your program should enter a "waiting" state. The user should be able to press 
    any button to reset the program back to its locked state while it's in the waiting state, and the 
-   program should be able to be used again.
+   program should reset.
 
-*Challenge*  
-- When the board starts, turn LED3 on for 3 seconds. During those 3 seconds, the user should be able
+2. When the board starts, turn LED3 on for 3 seconds. During those 3 seconds, the user should be able
    to click BTN3, which puts the program into an "entry" mode until BTN3 is clicked again. The user should be
    able to enter a password of their choice by entering a sequence of BTN0, BTN1, BTN2. Once they click BTN3, 
    the password should be saved, and the program should enter the locked state, where it should function the 
