@@ -25,9 +25,7 @@ typedef enum led_frequency_t {
   LED_1HZ = 1,
   LED_2HZ = 2,
   LED_4HZ = 4,
-  LED_5HZ = 5,
   LED_8HZ = 8,
-  LED_10HZ = 10,
   LED_16HZ = 16,
 } led_frequency;
 

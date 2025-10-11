@@ -12,8 +12,10 @@ Header to define led module logic
 /* ----------------------------------------------------------------------------
                                     Constants
 ---------------------------------------------------------------------------- */
-#define LED_BLINK_STACK_SIZE    512
-#define LED_BLINK_PRIORITY      1
+#define LED_BLINK_STACK_SIZE      384
+#define LED_BLINK_PRIORITY        1
+#define LED_COUNTER_UNIT          100 // Units per ms (1 unit == 10us)
+#define LED_COUNTER_HALF_PERIOD   500 * LED_COUNTER_UNIT // Units per half second (1 second / 2 == 500ms)
 
 #define LED0_NODE   DT_ALIAS(led0)
 #define LED1_NODE   DT_ALIAS(led1)
@@ -23,37 +25,41 @@ Header to define led module logic
 /* ----------------------------------------------------------------------------
                                     Types
 ---------------------------------------------------------------------------- */
+typedef struct led_blink_t {
+  uint16_t half_period; // Units of 10us
+  uint16_t offset; // Units of 10us
+} led_blink;
+
 typedef struct led_gpio_t {
   struct gpio_dt_spec spec; 
   char *name;
-  bool is_blinking;
-  led_frequency frequency;
-  struct k_thread thread;
-  k_tid_t tid;
+  led_blink blink;
 } led_gpio;
+
+typedef struct blink_thread_t {
+  struct k_thread thread;
+  k_tid_t id;
+  uint8_t led_bitmask;
+} blink_thread;
 
 /* ----------------------------------------------------------------------------
                             Private Function Prototypes
 ---------------------------------------------------------------------------- */
 static int _led_config(const led_gpio *led);
 
-void _suspend_blink_thread(led_id led);
-
 void _led_blink_loop(void *led, void *p2, void *p3);
 
 /* ----------------------------------------------------------------------------
                                 Global States
 ---------------------------------------------------------------------------- */
-static led_gpio _led0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios), .name="LED0", .is_blinking=false};
-static led_gpio _led1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios), .name="LED1", .is_blinking=false};
-static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios), .name="LED2", .is_blinking=false};
-static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios), .name="LED3", .is_blinking=false};
+static led_gpio _led0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios), .name="LED0"};
+static led_gpio _led1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios), .name="LED1"};
+static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios), .name="LED2"};
+static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios), .name="LED3"};
 static led_gpio *_leds[NUM_LEDS];
 
-K_THREAD_STACK_DEFINE(_led0_blink_stack, LED_BLINK_STACK_SIZE);
-K_THREAD_STACK_DEFINE(_led1_blink_stack, LED_BLINK_STACK_SIZE);
-K_THREAD_STACK_DEFINE(_led2_blink_stack, LED_BLINK_STACK_SIZE);
-K_THREAD_STACK_DEFINE(_led3_blink_stack, LED_BLINK_STACK_SIZE);
+static blink_thread _led_blink_thread = {.led_bitmask=0};
+K_THREAD_STACK_DEFINE(_led_blink_stack, LED_BLINK_STACK_SIZE);
 
 /* ----------------------------------------------------------------------------
                               Private Functions
@@ -76,20 +82,27 @@ static int _led_config(const led_gpio *led) {
 }
 
 /**
- * @brief Acts as a generic blink led thread
+ * @brief Handles blinking all LEDs
  * 
- * @param [in] led The led instance to blink
+ * @param [in] p1 Unused thread parameter 1
  * @param [in] p2 Unused thread parameter 2
  * @param [in] p2 Unused thread parameter 3
  */
-void _led_blink_loop(void *led, void *p2, void *p3) {
-  led_id _led = (led_id)(uintptr_t)led;
-  int _frequency = (int)_leds[_led]->frequency;
+void _led_blink_loop(void *p1, void *p2, void *p3) {
+  uint16_t min_half_period = LED_COUNTER_HALF_PERIOD / LED_16HZ;
 
   while (1) {
-    _frequency = (int)_leds[_led]->frequency;
-    LED_toggle(_led);
-    k_msleep(500 / _frequency);
+    k_msleep(min_half_period / LED_COUNTER_UNIT);
+
+    for (int i = 0; i < NUM_LEDS; i++) {
+      if (_led_blink_thread.led_bitmask & BIT(i)) {
+        _leds[i]->blink.offset += min_half_period;
+        if (_leds[i]->blink.offset >= _leds[i]->blink.half_period){
+          _leds[i]->blink.offset = 0;
+          LED_toggle(i);
+        }
+      }
+    }
   }
 }
 
@@ -107,59 +120,24 @@ int LED_init() {
   _leds[2] = &_led2;
   _leds[3] = &_led3;
 
-  for (uint8_t i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_LEDS; i++) {
     int rv = _led_config(_leds[i]);
     if (rv < 0) {
       return rv;
     }
   }
 
-  _led0.tid = k_thread_create(
-    &_led0.thread,
-    _led0_blink_stack,
-    K_THREAD_STACK_SIZEOF(_led0_blink_stack),
+  _led_blink_thread.id = k_thread_create(
+    &_led_blink_thread.thread,
+    _led_blink_stack,
+    K_THREAD_STACK_SIZEOF(_led_blink_stack),
     _led_blink_loop,
-    (void *)(uintptr_t)LED0, NULL, NULL,
+    NULL, NULL, NULL,
     LED_BLINK_PRIORITY,
     0,
     K_NO_WAIT
   );
-  k_thread_suspend(_led0.tid);
-
-  _led1.tid = k_thread_create(
-    &_led1.thread,
-    _led1_blink_stack,
-    K_THREAD_STACK_SIZEOF(_led1_blink_stack),
-    _led_blink_loop,
-    (void *)(uintptr_t)LED1, NULL, NULL,
-    LED_BLINK_PRIORITY,
-    0,
-    K_NO_WAIT
-  );
-  k_thread_suspend(_led1.tid);
-  _led2.tid = k_thread_create(
-    &_led2.thread,
-    _led2_blink_stack,
-    K_THREAD_STACK_SIZEOF(_led2_blink_stack),
-    _led_blink_loop,
-    (void *)(uintptr_t)LED2, NULL, NULL,
-    LED_BLINK_PRIORITY,
-    0,
-    K_NO_WAIT
-  );
-  k_thread_suspend(_led2.tid);
-
-  _led3.tid = k_thread_create(
-    &_led3.thread,
-    _led3_blink_stack,
-    K_THREAD_STACK_SIZEOF(_led3_blink_stack),
-    _led_blink_loop,
-    (void *)(uintptr_t)LED3, NULL, NULL,
-    LED_BLINK_PRIORITY,
-    0,
-    K_NO_WAIT
-  );
-  k_thread_suspend(_led3.tid);
+  k_thread_suspend(_led_blink_thread.id);
 
   return 0;
 }
@@ -192,9 +170,9 @@ int LED_set(led_id led, led_state new_state) {
     return -EINVAL;
   }
 
-  if (_leds[led]->is_blinking){
-    _leds[led]->is_blinking = false;
-    k_thread_suspend(_leds[led]->tid);
+  _led_blink_thread.led_bitmask &= ~BIT(led);
+  if (!_led_blink_thread.led_bitmask) {
+    k_thread_suspend(_led_blink_thread.id);
   }
 
   return gpio_pin_set_dt(&_leds[led]->spec, new_state);
@@ -207,9 +185,18 @@ int LED_set(led_id led, led_state new_state) {
  * @param [in] frequency The frequency to blink the led at
  */
 void LED_blink(led_id led, led_frequency frequency) {
-  _leds[led]->frequency = frequency;
-  if (!_leds[led]->is_blinking) {
-    _leds[led]->is_blinking = true;
-    k_thread_resume(_leds[led]->tid);
+  if (led >= NUM_LEDS || led < 0) {
+    return;
+  } else if (frequency > LED_16HZ || frequency <= 0) {
+    return;
   }
+
+  _leds[led]->blink.half_period = LED_COUNTER_HALF_PERIOD / frequency;
+  _leds[led]->blink.offset = 0;
+
+  if (!_led_blink_thread.led_bitmask) {
+    k_thread_resume(_led_blink_thread.id);
+  }
+
+  _led_blink_thread.led_bitmask |= BIT(led);
 }

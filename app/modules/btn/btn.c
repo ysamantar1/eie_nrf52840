@@ -13,9 +13,7 @@ Header to define button module logic
 /* ----------------------------------------------------------------------------
                                     Constants
 ---------------------------------------------------------------------------- */
-#define BTN_DEBOUNCE_MS         8
-#define BTN_WORKQ_STACK_SIZE    512
-#define BTN_WORKQ_PRIORITY      5
+#define BTN_DEBOUNCE_MS   20
 
 #define BTN0_NODE   DT_ALIAS(sw0)
 #define BTN1_NODE   DT_ALIAS(sw1)
@@ -27,8 +25,7 @@ Header to define button module logic
 ---------------------------------------------------------------------------- */
 typedef struct btn_gpio_t {
   struct gpio_dt_spec spec; 
-  char *name;
-  bool pressed;
+  volatile bool pressed;
   struct gpio_callback cb;
   struct k_work_delayable work;
 } btn_gpio;
@@ -45,10 +42,10 @@ static void _btn_debounce(struct k_work *work);
 /* ----------------------------------------------------------------------------
                                 Global States
 ---------------------------------------------------------------------------- */
-static btn_gpio _btn0 = {.spec=GPIO_DT_SPEC_GET(BTN0_NODE, gpios), .name="BTN0", .pressed=false};
-static btn_gpio _btn1 = {.spec=GPIO_DT_SPEC_GET(BTN1_NODE, gpios), .name="BTN1", .pressed=false};
-static btn_gpio _btn2 = {.spec=GPIO_DT_SPEC_GET(BTN2_NODE, gpios), .name="BTN2", .pressed=false};
-static btn_gpio _btn3 = {.spec=GPIO_DT_SPEC_GET(BTN3_NODE, gpios), .name="BTN3", .pressed=false};
+static btn_gpio _btn0 = {.spec=GPIO_DT_SPEC_GET(BTN0_NODE, gpios), .pressed=false};
+static btn_gpio _btn1 = {.spec=GPIO_DT_SPEC_GET(BTN1_NODE, gpios), .pressed=false};
+static btn_gpio _btn2 = {.spec=GPIO_DT_SPEC_GET(BTN2_NODE, gpios), .pressed=false};
+static btn_gpio _btn3 = {.spec=GPIO_DT_SPEC_GET(BTN3_NODE, gpios), .pressed=false};
 static btn_gpio *_btns[NUM_BTNS];
 
 /* ----------------------------------------------------------------------------
@@ -86,7 +83,6 @@ static int _btn_config(btn_gpio *btn) {
 static void _btn_interrupt_service_routine(const struct device *dev, struct gpio_callback *cb, uint32_t pins) {
   for (uint8_t i = 0; i < NUM_BTNS; i++) {
     if (pins & BIT(_btns[i]->spec.pin)) {
-      // Reschedule the debounce response another BTN_DEBOUNCE_MS milliseconds
       k_work_reschedule(&_btns[i]->work, K_MSEC(BTN_DEBOUNCE_MS));
     }
   }
@@ -158,9 +154,7 @@ bool BTN_is_pressed(btn_id btn) {
  */
 bool BTN_check_clear_pressed(btn_id btn) {
   bool was_pressed = _btns[btn]->pressed;
-  if (was_pressed) {
-    _btns[btn]->pressed = false;
-  } 
+  _btns[btn]->pressed = false;
   return was_pressed;
 }
 
@@ -185,9 +179,6 @@ bool BTN_check_pressed(btn_id btn) {
  * @param [in] btn Which button to clear
  */
 void BTN_clear_pressed(btn_id btn) {
-  bool was_pressed = _btns[btn]->pressed;
-  if (was_pressed) {
-    _btns[btn]->pressed = false;
-  }
+  _btns[btn]->pressed = false;
   return;
 }
