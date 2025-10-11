@@ -5,7 +5,7 @@ Header to define button interface
 #ifndef BTN_H
 #define BTN_H
 
-#include "includes.h"
+#include "stdbool.h"
 
 /* ----------------------------------------------------------------------------
                                     TYPES

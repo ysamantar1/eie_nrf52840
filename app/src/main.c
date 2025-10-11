@@ -8,8 +8,7 @@
 #include <zephyr/sys/printk.h>
 #include <inttypes.h>
 
-int main(void)
-{
+int main(void) {
 
   while(1) {
 

@@ -148,7 +148,7 @@ negative return values are typically used to convey error codes.
      - Note: * is called a "glob" and in this case denotes all names/symbols starting with
        "gpio_"
    - <zephyr/sys/printk.h> includes the printk function
-   - <stdint.h> includes fixed sized integer types like uint8_t and sint32_t
+   - <inttypes.h> includes fixed sized integer types like uint8_t and sint32_t
 2. Start by initializing the `gpio_dt_spec` struct for button 0 from the device tree  
    ![](images/InitializeGpioSpec.png)  
    Remember that this is going to the device tree (the abstraction layer that maps boards to the
@@ -304,6 +304,8 @@ Build this and flash it to your board. Now click the button 15 times and count h
 
 Create seperate git commits for each part of the exercise, once you're done this lesson push
 your changes to the debug_buttons branch of your repository.
+
+- 
 
 - Create a password system that uses BTN0, BTN1, BTN2 as inputs, and BTN3 as the "enter" button.
    The program should start in a locked state with LED0 turned on. The user should be able to click
