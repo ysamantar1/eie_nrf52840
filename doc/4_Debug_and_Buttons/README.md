@@ -57,6 +57,7 @@ ASCII (American Standard Code for Information Interchange) is an encoding standa
 numbers, Latin alphabet letters and other common symbols to binary, here's a handy table:
 
 ![](images/ASCII.png)  
+(Table from ZZT32 and is in the public domain)
 
 When you use a debug print statement with a serial interface, it converts the text you give to
 binary and transmits it in order to the receiver, who then decodes it back to text using the same
@@ -69,12 +70,13 @@ All serial monitors effectively do the same thing, so you're welcome to use any 
 like if you already have a preference. Otherwise, it's recommended you follow these steps to use our
 recommended serial monitor:
 1. Open VSCode and click the "Extensions" menu in the left sidebar
-2. Search "Serial Monitor" and install the extension by Microsoft  
+2. Search "@recommended" and make sure "Serial Monitor" by Microsoft is installed, if you don't see it, procede to step 3
+3. Search "Serial Monitor" and install the extension by Microsoft  
    ![](images/SerialMonitorExtension.png)  
-3. Open the terminal by hovering your mouse near the bottom of VSCode and pulling up once you see
+4. Open the terminal by hovering your mouse near the bottom of VSCode and pulling up once you see
    the arrow. Alternatively, select the three dots at the top-left of VSCode click 
    "Terminal">"New Terminal" and in the tabs select "SERIAL MONITOR"
-4. Note you may need to restart VSCode or restart extensions to be able to see it as an option
+5. Note you may need to restart VSCode or restart extensions to be able to see it as an option
 
 ### How to use it
 
@@ -259,10 +261,8 @@ and then check once things have stabilized. Different buttons have different bou
 important to keep that in mind when writing a debouncing system.
 
 Because debouncing buttons can be complicated, we'll provide you with some functions you can use 
-that handle debouncing internally. They live in app/modules/BTN/btn.c, so feel free to take a look
-at how the debouncing works, but don't worry if it doesn't make much sense either. Usually, we
-refer to one or more functions that give you an interface into a module as "APIs" or
-*Application Programmer Interfaces*.
+that handle debouncing internally. Usually, we refer to one or more functions that give you an 
+interface into a module as "APIs" or *Application Programmer Interfaces*.
 
 ### EiE Button APIs
 

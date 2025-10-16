@@ -46,7 +46,7 @@ static btn_gpio _btn0 = {.spec=GPIO_DT_SPEC_GET(BTN0_NODE, gpios), .pressed=fals
 static btn_gpio _btn1 = {.spec=GPIO_DT_SPEC_GET(BTN1_NODE, gpios), .pressed=false};
 static btn_gpio _btn2 = {.spec=GPIO_DT_SPEC_GET(BTN2_NODE, gpios), .pressed=false};
 static btn_gpio _btn3 = {.spec=GPIO_DT_SPEC_GET(BTN3_NODE, gpios), .pressed=false};
-static btn_gpio *_btns[NUM_BTNS];
+static btn_gpio *_btns[NUM_BTNS] = {&_btn0, &_btn1, &_btn2, &_btn3};
 
 /* ----------------------------------------------------------------------------
                               Private Functions
@@ -112,18 +112,12 @@ static void _btn_debounce(struct k_work *_work) {
  * @return Error code, < 0 on failures
  */
 int BTN_init() {
-  _btns[0] = &_btn0;
-  _btns[1] = &_btn1;
-  _btns[2] = &_btn2;
-  _btns[3] = &_btn3;
-
   for (uint8_t i = 0; i < NUM_BTNS; i++) {
     int rv = _btn_config(_btns[i]);
     if (rv < 0) {
       return rv;
     }
   }
-
   return 0;
 }
 

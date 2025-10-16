@@ -55,7 +55,7 @@ static led_gpio _led0 = {.spec=GPIO_DT_SPEC_GET(LED0_NODE, gpios)};
 static led_gpio _led1 = {.spec=GPIO_DT_SPEC_GET(LED1_NODE, gpios)};
 static led_gpio _led2 = {.spec=GPIO_DT_SPEC_GET(LED2_NODE, gpios)};
 static led_gpio _led3 = {.spec=GPIO_DT_SPEC_GET(LED3_NODE, gpios)};
-static led_gpio *_leds[NUM_LEDS];
+static led_gpio *_leds[NUM_LEDS] = {&_led0, &_led1, &_led2, &_led3};
 
 static blink_thread _led_blink_thread = {.led_bitmask=0};
 K_THREAD_STACK_DEFINE(_led_blink_stack, LED_BLINK_STACK_SIZE);
@@ -87,7 +87,7 @@ static int _led_config(const led_gpio *led) {
  * @param [in] p2 Unused thread parameter 2
  * @param [in] p2 Unused thread parameter 3
  */
-void _led_blink_loop(void *p1, void *p2, void *p3) {
+void _led_blink_loop(void *p1 __attribute__((unused)), void *p2 __attribute__((unused)), void *p3 __attribute__((unused))) {
   uint16_t min_half_period = LED_COUNTER_HALF_PERIOD / LED_16HZ;
 
   while (1) {
@@ -114,11 +114,6 @@ void _led_blink_loop(void *p1, void *p2, void *p3) {
  * @return Error code, < 0 on failures
  */
 int LED_init() {
-  _leds[0] = &_led0;
-  _leds[1] = &_led1;
-  _leds[2] = &_led2;
-  _leds[3] = &_led3;
-
   for (int i = 0; i < NUM_LEDS; i++) {
     int rv = _led_config(_leds[i]);
     if (rv < 0) {
@@ -137,7 +132,7 @@ int LED_init() {
     K_NO_WAIT
   );
   k_thread_suspend(_led_blink_thread.id);
-
+  
   return 0;
 }
 
