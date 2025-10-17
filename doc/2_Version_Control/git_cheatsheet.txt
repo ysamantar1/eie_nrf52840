@@ -1,0 +1,19 @@
+git commit -m "<message>" -- commit your staged content as a new commit snapshot
+
+git branch <branch-name> -- create a new branch at the current commit
+
+git checkout -- switch to another branch and check it out into your working directory
+
+git pull -- fetch and merge any commits from the tracking remote branch
+
+git push -- Transmit local branch commits to the remote repository branch
+
+git merge <branch> -- merge the specified branch’s history into the current one
+
+git rebase -- apply any commits of current branch ahead of specified one
+
+git fetch -- fetch down all the branches from that Git remote
+
+git status -- show modified files in working directory, staged for your next commit
+
+git add <file> -- add a file as it looks now to your next commit (stage)
