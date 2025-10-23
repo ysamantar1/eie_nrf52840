@@ -279,4 +279,4 @@ S4 -> S0 : Button 4 pressed
 @enduml
 ....
 For each state also print upon entering and exiting the state to the console
-
+* Rewrite the password lock exercise from lesson 4 using a state machine.
