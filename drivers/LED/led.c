@@ -18,10 +18,15 @@ Header to define led module logic
 
 #define PWM_MAX_DUTY_CYCLE        100 // Valid duty cycle range for this application is 0 - 100
 
-#define LED0_NODE   DT_ALIAS(pwm_led0)
-#define LED1_NODE   DT_ALIAS(pwm_led1)
-#define LED2_NODE   DT_ALIAS(pwm_led2)
-#define LED3_NODE   DT_ALIAS(pwm_led3)
+/* ----------------------------------------------------------------------------
+                                  Macro Helpers
+---------------------------------------------------------------------------- */
+#define LED0_NODE             DT_ALIAS(pwm_led0)
+#define LED1_NODE             DT_ALIAS(pwm_led1)
+#define LED2_NODE             DT_ALIAS(pwm_led2)
+#define LED3_NODE             DT_ALIAS(pwm_led3)
+
+#define IS_INVALID_LED(led)   (led >= NUM_LEDS || led < 0)
 
 /* ----------------------------------------------------------------------------
                                     Types
@@ -46,8 +51,6 @@ typedef struct blink_thread_t {
 /* ----------------------------------------------------------------------------
                             Private Function Prototypes
 ---------------------------------------------------------------------------- */
-static int _led_config(const led_type *led);
-
 static int _led_pwm_preserve_blink(led_id led, uint8_t duty_cycle);
 
 static void _led_halt_blink(led_id led);
@@ -70,21 +73,6 @@ K_THREAD_STACK_DEFINE(_led_blink_stack, LED_BLINK_STACK_SIZE);
                               Private Functions
 ---------------------------------------------------------------------------- */
 /**
- * @brief Configures a pwm LED spec
- * 
- * @param [in] led the led_type object to configure
- * 
- * @return Error code, < 0 on failures
- */
-static int _led_config(const led_type *led) {
-  if (!pwm_is_ready_dt(&led->spec)) {
-		return -EIO;
-	} else {
-    return 0;
-  }
-}
-
-/**
  * @brief Sets the LED to the given duty cycle, doesn't halt blinking
  * 
  * @param [in] led the LED to set the duty cycle of
@@ -93,7 +81,7 @@ static int _led_config(const led_type *led) {
  * @return Error code, < 0 on failures
  */
 static int _led_pwm_preserve_blink(led_id led, uint8_t duty_cycle) {
-  if (led >= NUM_LEDS || led < 0) {
+  if (IS_INVALID_LED(led)) {
     return -EINVAL;
   }
 
@@ -109,7 +97,7 @@ static int _led_pwm_preserve_blink(led_id led, uint8_t duty_cycle) {
  * @param [in] led the LED instance to halt blinking for
  */
 static void _led_halt_blink(led_id led) {
-  if (led >= NUM_LEDS || led < 0) {
+  if (IS_INVALID_LED(led)) {
     return;
   }
 
@@ -154,7 +142,7 @@ static void _led_blink_loop(void *p1 __attribute__((unused)), void *p2 __attribu
  */
 int LED_init() {
   for (int i = 0; i < NUM_LEDS; i++) {
-    int rv = _led_config(_leds[i]);
+    int rv = pwm_is_ready_dt(&_leds[i]->spec);
     if (rv < 0) {
       return rv;
     }
@@ -183,7 +171,7 @@ int LED_init() {
  * @return Error code, < 0 on failures
  */
 int LED_toggle(led_id led) {
-  if (led >= NUM_LEDS || led < 0) {
+  if (IS_INVALID_LED(led)) {
     return -EINVAL;
   } else {
     if (0 == _leds[led]->current_duty_cycle) {
@@ -204,7 +192,7 @@ int LED_toggle(led_id led) {
  * @return Error code, < 0 on failures
  */
 int LED_set(led_id led, led_state new_state) {
-  if (led >= NUM_LEDS || led < 0) {
+  if (IS_INVALID_LED(led)) {
     return -EINVAL;
   }
 
@@ -223,7 +211,7 @@ int LED_set(led_id led, led_state new_state) {
  * @return Error code, < 0 on failures
  */
 int LED_pwm(led_id led, uint8_t duty_cycle) {
-  if (led >= NUM_LEDS || led < 0) {
+  if (IS_INVALID_LED(led)) {
     return -EINVAL;
   }
 
@@ -239,7 +227,7 @@ int LED_pwm(led_id led, uint8_t duty_cycle) {
  * @param [in] frequency The frequency to blink the led at
  */
 void LED_blink(led_id led, led_frequency frequency) {
-  if (led >= NUM_LEDS || led < 0) {
+  if (IS_INVALID_LED(led)) {
     return;
   } else if (frequency > LED_16HZ || frequency <= 0) {
     return;
