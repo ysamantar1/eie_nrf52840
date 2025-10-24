@@ -16,38 +16,7 @@ In a state machine we define the system states and how the system transitions be
 
 We often use State transition diagrams to show the states and the transitions between them.
 For example the diagram below shows an example state machine for a traffic light with the criteria for each transition next to the transition arrow.
-[plantuml]
-....
-@startuml
-S1 : East/West Light Green
-S1 : North/South Light Red
-
-S2 : East/West Light Yellow
-S2 : North/South Light Red
-
-S3 : East/West Light Red
-S3 : North/South Light Red
-
-S4 : East/West Light Red
-S4 : North/South Light Green
-
-S5 : East/West Light Red
-S5 : North/South Light Yellow
-
-S6 : East/West Light Red
-S6 : North/South Light Red
-
-[*] --> S1
-
-S1 --> S2 : Cars are waiting to travel North/South
-S2 --> S3 : 10 s have passed
-S3 -right-> S4 : 3 s have passed
-S4 -up-> S5 : Cars are waiting to travel East/West
-S5 -up-> S6 : 10 s have passed
-S6 -left-> S1 : 3 s have passed
-
-@enduml
-....
+image::traffic_light_sm.png[]
 
 === C Language Features
 
@@ -171,23 +140,12 @@ To start with we are going to create a simple state machine that blinks an LED.
 . The first step in creating a state machine is to define all the states and draw out the state diagram.
 The state diagram is drawn below
 +
-[plantuml]
-....
-@startuml
-S0 : LED0 is on
-S1 : LED0 is off
-
-[*] -> S0
-
-S0 -> S1 : 1 s passed
-S1 -> S0 : 1 s passed
-@enduml
-....
+image::led_sm.puml[]
 This is a rather simple state machine with only 2 states, however as you start to work with more complicated machines this process becomes invaluable.
 . Next we need to enable the state machine framework in kconfig. Similarly to when we enabled the GPIO in lesson 3 we need to enable the state machine framework by adding the `CONFIG_SMF` to the `prj.conf` file in `app`. The `prj.conf` should look like the below afterwards.
 +
 image::prj_edits.png[]
-. To organize our code better we are going to spilt the state machine into a separate C and H file. In the app/src folder create the files `my_state_machine.c` and `my_state_machine.h`. Similarly to when we initially created the main.c file we need to add the new source file to the `app/CMakeLists.txt` file. After adding the new source file the `CMakeLists.txt` file should have the following
+. To organize our code better we are going to split the state machine into a separate C and H file. In the app/src folder create the files `my_state_machine.c` and `my_state_machine.h`. Similarly to when we initially created the main.c file we need to add the new source file to the `app/CMakeLists.txt` file. After adding the new source file the `CMakeLists.txt` file should have the following
 +
 image::cmake_edits.png[]
 NOTE: As we have modified the cmake source files you may need to do a clean build which you can either do by deleting the `build` folder or adding the `-p always` option when you run `west build`
@@ -251,32 +209,6 @@ Complete the following exercises. Make sure to use git to track your changes.
 . Modify the state machine we created to use an exit function for each state rather than an entry function.
 . Create a state machine for the following state diagram
 +
-[plantuml]
-....
-@startuml
-S0 : All LEDs off
-S1 : LED 1 blink at 4 Hz
-S2 : LED 1 and 3 on
-S2 : LED 2 and 4 off
-S3 : LED 1 and 3 off
-S3 : LED 2 and 4 on
-S4 : All LEDs blink at 16 Hz
-
-[*] -> S0
-
-S0 -> S1 : Button 1 pressed
-
-S1 -down-> S2 : Button 2 pressed
-S1 -up-> S4 : Button 3 pressed
-
-S2 -left-> S3 : 1 second passed
-S3 -> S2 : 2 seconds passed
-
-S1 -> S0 : Button 4 pressed
-S2 -> S0 : Button 4 pressed
-S3 -up-> S0 : Button 4 pressed
-S4 -> S0 : Button 4 pressed
-@enduml
-....
+image::exercise_sm.png[]
 For each state also print upon entering and exiting the state to the console
 * Rewrite the password lock exercise from lesson 4 using a state machine.
