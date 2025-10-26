@@ -84,8 +84,7 @@ static int _led_pwm_preserve_blink(led_id led, uint8_t duty_cycle) {
   if (IS_INVALID_LED(led)) {
     return -EINVAL;
   }
-
-  uint8_t clamped_duty_cycle = PWM_MAX_DUTY_CYCLE < duty_cycle ? duty_cycle % PWM_MAX_DUTY_CYCLE : duty_cycle;
+  uint8_t clamped_duty_cycle = PWM_MAX_DUTY_CYCLE < duty_cycle ? PWM_MAX_DUTY_CYCLE : duty_cycle;
   uint32_t pwm_step = _leds[led]->spec.period / PWM_MAX_DUTY_CYCLE;
   // Subtract clamped duty cycle as leds are active low
   return pwm_set_pulse_dt(&_leds[led]->spec, pwm_step * (PWM_MAX_DUTY_CYCLE - clamped_duty_cycle));
