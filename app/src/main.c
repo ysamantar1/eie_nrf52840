@@ -12,9 +12,6 @@
 
 #define SLEEP_MS 1
 
-#include "LED.h"
-#include "BTN.h"
-
 int main(void) {
 
   if (0 > BTN_init()) {
