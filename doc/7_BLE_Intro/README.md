@@ -94,10 +94,11 @@ To do so, you must:
 
 1. Open up a new Bash terminal and navigate to your `~/zephyr-projects` directory.
 2. Activate your virtual environment with `source .venv/Scripts/activate` (Windows) or `source .venv/bin/activate` (Mac/Linux).
-3. Navigate into your `eie_nrf52840.git` directory and open VS Code via `code .`.
-4. Open the `prj.conf` file and change the `CONFIG_BT_DEVICE_NAME` string to be `"#### EiE BLE Peripheral"`, where `####` is a number unique to you, like the last 4 digits of your UCID. This is important, since when everyone's devices start advertising, they'll all show up in your nRF Connect too!
-5. Go back to your Bash terminal and build the project with `west build -p always -b nrf52840dk/nrf52840 app`
-6. Plug in your dev board and flash it with `west flash`
+3. Navigate into your `eie_nrf52840.git` directory and **checkout the `lesson/ble_intro` branch!** (`git fetch upstream` then `git checkout lesson/ble_intro`)
+4. Open VS Code via `code .`.
+5. Open the `prj.conf` file and change the `CONFIG_BT_DEVICE_NAME` string to be `"#### EiE BLE Peripheral"`, where `####` is a number unique to you, like the last 4 digits of your UCID. This is important, since when everyone's devices start advertising, they'll all show up in your nRF Connect too!
+6. Go back to your Bash terminal and build the project with `west build -p always -b nrf52840dk/nrf52840 app`
+7. Plug in your dev board and flash it with `west flash`
 
 If there were no error messages, you've flashed your board!
 Now time to move on and connect with it via nRF Connect.
@@ -131,9 +132,16 @@ it is set to start advertising and become receptive to connections on startup.
 
 ![](images/service.jpg)
 
-7. Test read (should be "EiE")
-8. Test write (output via printk)
-9. Test notify (counter at 1Hz, note that it counts up regardless of if central is subscribed)
+7. Next to "Unknown Characteristic", tap the single-down-arrow icon to perform a *read*.
+   This should read out 3 bytes, containing the string "EiE".
+8. Next, tap the single-up-arrow icon to perform a *write*.
+   This will pop up a menu where you can enter data to write to the characteristic.
+   Change the drop-down from "BYTE ARRAY" to "TEXT (UTF-8)", type in a message to send, and hit "SEND".
+   The board will then output the received string over the serial log,
+   so make sure you have the serial monitor open and connected in VS Code!
+9. Finally, Tap the multi-down-arrow icon to subscribe to *notifications*.
+   This will show a new read value every time the board sends out a notification to that characteristic,
+   which it is programmed to do with a counter that increments every second.
 
 Note that there is no proper disconnect handling.
 The board will connect to only the first device that tries, and only the first time.
@@ -144,16 +152,41 @@ simply hit the reset button on the board or unplug it and plug it back in.
 
 ### Explore the Example Code
 
-- Service description macro
+- Service description
+  - `BT_GATT_SERVICE_DEFINE` is used for telling the radio how to define a single service
+    - `BT_GATT_PRIMARY_SERVICE` sets the UUID for the service
+    - `BT_GATT_CHARACTERISTIC` defines a single characteristic, along with its UUID, properties, permissions, and callbacks
+      - You can add more `BT_GATT_CHARACTERISTIC` calls to the `BT_GATT_CHARACTERISTIC` arguments to add more characteristics to the service, but make sure the UUIDs are different for each characteristic!
+    - `BT_GATT_CCC` adds a "client characteristic configuration" descriptor to the previous characteristic, which for us, simply allows for notifications to be subscribed to
 - Read callback
+  - `ble_custom_service_read` is called whenever a *connected device* tries to *read* from our characteristic
 - Write callback
+  - `ble_custom_service_write` is called whenever a *connected device* tries to *write* to our characteristic
 - Notify function
+  - `ble_custom_service_notify` can be called by *the dev board* in order to send out a notification to connected devices that are subscribed to our characteristic
+  - Note that this is backwards from read/write!
+
 - Main
   - BLE init
+    - `bt_enable(NULL)` is called once to enable the BLE subsystem
+      - `NULL` is passed as an argument to tell the subsystem to finish initialization before moving on, making this a *blocking* call
+      - A callback could be passed here instead, which would let the code continue, and then the callback would only be called once the BLE init is done, making this an *asynchronous* call
+    - `bt_le_adv_start(...)` is called after init, but before the main loop, to tell the radio to start advertising over BLE
+      - `BT_LE_ADV_CONN_FAST_1` is a default set of parameters that tells the radio to use "connectable" advertising packets and transmit them frequently (we're not concerned about power usage here)
+      - The remaining arguments tell the radio what data to put in the advertising packets, and in the "scan response" data (which can optionally be requested by a device before it connects)
   - Notify function called in main loop
+    - `ble_custom_service_notify(&count, 4)` is called once per second in the main loop, notifying any connected devices that are subscribed to our custom characteristic with the value of a counter
+      - Note that this notification is exactly that, just a notification, and does *not* change the underlying value of the data stored by the characteristic (which is "EiE" in this example, since we haven't implemented a way to change it, however this is definitely possible!)
 
 ## Challenge
 
-- Make it so that:
-   - Writing "LED ON" or "LED OFF" to the characteristic sets LED 1 appropriately
-   - Pushing Button 1 swaps the direction of the notify counter
+If you have time before the end of the lesson and have completed the above,
+give the following challenges a shot.
+The purpose of the next lesson will be to get much more familiar with implementing your own custom service and characteristics,
+so these will provide you a good head start:
+
+1. Modify the supplied example so that if a connected device *writes* the string "LED ON" or "LED OFF" to the custom characteristic, LED 1 is set appropriately.
+
+2. Add in a feature that reverses the direction of the *notify* counter every time BUTTON 1 is pressed.
+
+3. Make it so that if a connected device *reads* from the custom characteristic, it outputs the current status of LED 1 ("ON" or "OFF") instead of the default "EiE".
