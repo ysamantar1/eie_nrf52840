@@ -81,8 +81,8 @@ BT_GATT_SERVICE_DEFINE(
 
 static ssize_t ble_custom_service_read(struct bt_conn* conn, const struct bt_gatt_attr* attr,
                                        void* buf, uint16_t len, uint16_t offset) {
-  // Send the data that we initialized the characteristic with ("EiE") by fetching it directly from
-  // the characteristic definition
+  // Send the data that is stored in the characteristic ("EiE" by default, can change if written to)
+  // by fetching it directly from the characteristic object
   const char* data_to_send_to_connected_device = attr->user_data;
 
   return bt_gatt_attr_read(conn, attr, buf, len, offset, data_to_send_to_connected_device,
@@ -136,7 +136,6 @@ int main(void) {
     return 0;
   }
 
-  int count = 0;
   while (1) {
     k_sleep(K_MSEC(1000));
     ble_custom_service_notify();

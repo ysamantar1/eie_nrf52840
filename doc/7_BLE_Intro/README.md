@@ -176,7 +176,7 @@ simply hit the reset button on the board or unplug it and plug it back in.
       - The remaining arguments tell the radio what data to put in the advertising packets, and in the "scan response" data (which can optionally be requested by a device before it connects)
   - Notify function called in main loop
     - `ble_custom_service_notify(&count, 4)` is called once per second in the main loop, notifying any connected devices that are subscribed to our custom characteristic with the value of a counter
-      - Note that this notification is exactly that, just a notification, and does *not* change the underlying value of the data stored by the characteristic (which is "EiE" in this example, since we haven't implemented a way to change it, however this is definitely possible!)
+      - Note that this notification is exactly that, just a notification, and does *not* change the underlying value of the data stored by the characteristic
 
 ## Challenge
 
