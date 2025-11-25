@@ -1,0 +1,5 @@
+west:
+  command: C:\Users\ysama\zephyr-projects\.venv\Scripts\west build -b nrf52840dk/nrf52840
+    .
+  topdir: C:\Users\ysama\zephyr-projects
+  version: 1.4.0
