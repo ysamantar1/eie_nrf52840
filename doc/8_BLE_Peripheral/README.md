@@ -107,8 +107,8 @@ In its simplest form, we simply relay the read event to the GATT server,
 which then will send the current stored value of the characteristic to the connected device.
 
 ```c
-static ssize_t ble_custom_service_read(struct bt_conn* conn, const struct bt_gatt_attr* attr,
-                                       void* buf, uint16_t len, uint16_t offset) {
+static ssize_t ble_custom_characteristic_read_cb(struct bt_conn* conn, const struct bt_gatt_attr* attr,
+                                                 void* buf, uint16_t len, uint16_t offset) {
   const char* value = attr->user_data;
   return bt_gatt_attr_read(conn, attr, buf, len, offset, value, strlen(value));
 }
@@ -122,9 +122,9 @@ In its simplest form, all we do is take the value written, ensure that it isn't 
 and then save it into the characteristic's data buffer.
 
 ```c
-static ssize_t ble_custom_service_write(struct bt_conn* conn, const struct bt_gatt_attr* attr,
-                                        const void* buf, uint16_t len, uint16_t offset,
-                                        uint8_t flags) {
+static ssize_t ble_custom_characteristic_write_cb(struct bt_conn* conn, const struct bt_gatt_attr* attr,
+                                                  const void* buf, uint16_t len, uint16_t offset,
+                                                  uint8_t flags) {
   uint8_t* value_ptr = attr->user_data;
 
   if (offset + len > BLE_CUSTOM_CHARACTERISTIC_MAX_DATA_LENGTH) {
@@ -152,8 +152,7 @@ where `BLE_CUSTOM_SERVICE_UUID` and `BLE_CUSTOM_CHARACTERISTIC_UUID` are the `#d
 
 ```c
 static const struct bt_uuid_128 ble_custom_service_uuid = BT_UUID_INIT_128(BLE_CUSTOM_SERVICE_UUID);
-static const struct bt_uuid_128 ble_custom_characteristic_uuid =
-    BT_UUID_INIT_128(BLE_CUSTOM_CHARACTERISTIC_UUID);
+static const struct bt_uuid_128 ble_custom_characteristic_uuid = BT_UUID_INIT_128(BLE_CUSTOM_CHARACTERISTIC_UUID);
 ```
 
 Then we'll start the service definition macro:
@@ -178,6 +177,7 @@ These all use either pre-defined `BT_GATT_CHRC_*` (for permitted operations) or 
 values all bitwise-OR'd together.
 This sets specific flag bits that the BLE stack uses to configure some lower-level behaviour.
 For both of these, we want the `READ` and `WRITE` values.
+Put this macro inside the list of arguments to `BT_GATT_SERVICE_DEFINE` after `BT_GATT_PRIMARY_SERVICE(...)`.
 
 ```c
     ...
@@ -185,38 +185,93 @@ For both of these, we want the `READ` and `WRITE` values.
         &ble_custom_characteristic_uuid.uuid,  // Setting the characteristic UUID
         <BT_GATT_CHRC_* values ORd together>,  // Possible operations
         <BT_GATT_PERM_* values ORd together>,  // Permissions that connecting devices have
-        ble_custom_service_read,             // Callback for when this characteristic is read from
-        ble_custom_service_write,            // Callback for when this characteristic is written to
-        ble_custom_characteristic_user_data  // Initial data stored in this characteristic
+        ble_custom_characteristic_read_cb,     // Callback for when this characteristic is read from
+        ble_custom_characteristic_write_cb,    // Callback for when this characteristic is written to
+        ble_custom_characteristic_user_data    // Initial data stored in this characteristic
         ),
     ...
 ```
 
 #### Main
 
-TODO
+The last thing we need to do is initialize the BLE module and start advertising in the `main` function.
+First, we can call `bt_enable(NULL)` to initialize BLE.
+Be sure to check the return value, as **any value other than 0 means the init failed**.
+Pay attention here, because *this is backwards from what you're used to with booleans*!
+This is because lots of Zephyr APIs use "Error Numbers" to communicate *what* failed,
+rather than just the fact that *something* failed.
+In this scheme, 0 typically means "OK" and everything else has a related error message.
+Zephyr defines these here if you're interested:
+<https://docs.zephyrproject.org/3.7.0/doxygen/html/group__system__errno.html>
+If you get anything else, print the error value and return from the `main(...)` function.
 
-```c
-int main(void) {
-  int err = bt_enable(NULL);
-  if (err) {
-    printk("Bluetooth init failed (err %d)\n", err);
-    return 0;
-  } else {
-    printk("Bluetooth initialized!\n");
-  }
+The argument to `bt_enable(...)` being `NULL` means that we want the BLE module to init *synchronously*,
+meaning that this call is a *blocking* call,
+and only passes to the next instruction once the BLE module is ready to be used.
+We could, in theory, pass a callback here instead and do other things while the module initializes,
+then start using BLE once the callback is called, but that isn't necessary for us at the moment.
 
-  err =
-      bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ble_advertising_data, ARRAY_SIZE(ble_advertising_data),
-                      ble_scan_response_data, ARRAY_SIZE(ble_scan_response_data));
-  if (err) {
-    printk("Advertising failed to start (err %d)\n", err);
-    return 0;
-  }
+Next we want to start *advertising*,
+or sending out small "advertising packets" over the radio for other devices to find.
+Note that we only want to be advertising when we want other devices to be able to see us,
+and most of the time, connect to us.
+This is done with the `bt_le_adv_start(...)` function.
+For it's arguments, we need to pass in the advertising config
+(use the prebuilt `BT_LE_ADV_CONN_FAST_1` for this),
+a pointer to our advertising data array (`ble_advertising_data`),
+the size of our advertising data (`ARRAY_SIZE(ble_advertising_data)`),
+and then a pointer to our "scan response" data array and its size as well
+(we aren't using these, so just use `NULL` and `0` for these respectively).
 
-  while (1) {
-    k_sleep(K_MSEC(1000));
-    ble_custom_service_notify();
-  }
-}
-```
+Just like with `bt_enable(...)`, make sure the return value from `bt_le_adv_start(...)` is 0 before continuing.
+Otherwise, print the error value and return from the `main(...)` function.
+
+**Make sure that you do all of this** ***before*** **the main loop!**
+We only want this to happen once!
+
+### Run It!
+
+Once compiled and flashed,
+your board should now be functioning very similarly to the example code from the previous lesson,
+so let's test it!
+Open up nRF Connect on your phone and ensure you can find and connect to your board,
+see your custom service and characteristic,
+and read and write data to said characteristic.
+If anything isn't working,
+be sure to add some `printk(...)` statements to your code and look at what's happening in the serial monitor.
+If you get stuck, ask a leader!
+
+## Challenge
+
+If you're finished early and have your board all working as expected,
+try to complete the following to advance your knowledge and capabilities:
+
+1. Currently, your custom service only has a single characteristic.
+   Many custom and pre-defined BLE services actually have *multiple* characteristics for organization and permission management.
+   Try adding *another* characteristic to your existing service that operates completely independently.
+   For example, writing to one characteristic should not impact the other,
+   and each should be able to store their own value that can be read from/written to.
+
+2. Expanding from challenge 1, let's start messing with permissions.
+   Now that you have 2 characteristics, we can make them act as a getter and a setter, respectively.
+   Modify the definition of your *first characteristic* such that it can *only be read from*.
+   Next, modify the definition of your *second characteristic* such that it can *only be written to*.
+   Finally, find a way to set the behaviour such that these two services act like they store the same value.
+   For example, if you write to the second characteristic, then read from the first,
+   the connected device should receive whatever value was just written to the second characteristic!
+
+3. While we went over reading and writing in this lesson,
+   the one feature missing from the example code that we didn't go over was notifications.
+   Referencing the example code from the last lesson (on the `lesson/ble_intro` branch),
+   try and find a way to allow for a connected device to subscribe to and receive notifications from one of your characteristics
+   (let's choose the one that can be read from if you've done challenge 1 first).
+   
+   a. What's been added to the arguments of `BT_GATT_SERVICE_DEFINE(...)`?
+
+   b. What's changed in the use of `BT_GATT_CHARACTERISTIC(...)`?
+
+   c. What's being called in the main loop? What does this function do?
+
+      i. Note: Depending on how you've modified your service with the first two challenges,
+         there might be a tiny change needed to a call in this function to do with the index used.
+         Try and figure it out, but if you get stuck, ask for help!
