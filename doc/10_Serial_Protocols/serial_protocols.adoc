@@ -1,0 +1,88 @@
+= Serial Protocols
+:doctype: article
+:imagesdir: imgs
+:toc:
+:xrefstyle: short
+
+== Introduction
+
+=== Important Concepts
+
+==== Endianness
+
+==== Datasheets
+
+=== What is serial communication
+
+=== Serial Peripheral Interface (SPI)
+
+=== Inter Integrated Circuit (I2C)
+
+=== Universal Asyncronous Receive Transmit (UART)
+
+== Lesson
+This lesson will focus on enabling SPI and I2C to communicate with the LCD and touch controller respectively on the Adafruit 2.8" TFT Touch Shield V2.
+A simplified schematic only showing the data connections between the nRF52840 and the components on the shield we can communicate with is shown below.
+
+[[fig_schematic]]
+.A simplified schematic showing the logical connections between the nRF52840 and the shield.
+image::schematic.svg[]
+
+This particular shield uses the FocalTech FT6206 touch controller (U3 on the schematic) connected via I2C, the ILITEK ILI9341 LCD driver over SPI (U2 on the schematic), and provides a micro SD card slot also connected over SPI (J1 on the schematic).
+In this lesson we will focus on the touch controller and LCD driver.
+The remainder of this lesson is split into 2 parts; one for SPI and one for I2C.
+Each section can be completed independently.
+
+The full schematic for the shield is available from adafruit<<shield_schematic>>.
+
+=== Enabling SPI
+
+We will be using SPI to talk to the LCD driver.
+
+==== Hardware Configuration
+
+Before we start writing software we need to figure out how to talk to the LCD driver.
+To do this we will reference the datasheet which can be found online at https://cdn-shop.adafruit.com/datasheets/ILI9341.pdf <<ILI9341>>.
+Throughout this lesson various datasheets will be referenced, however this is not a complete guide on how to read the datasheet.
+In section 7 of the data sheet it covers the various interfaces that can be used to connect to a MCU.
+In total there is 12 different interfaces we can use
+
+* 8 Bit 8080-I MCU Bus Interface
+* 9 Bit 8080-I MCU Bus Interface
+* 16 Bit 8080-I MCU Bus Interface
+* 18 Bit 8080-I MCU Bus Interface
+* 8 Bit 8080-II MCU Bus Interface
+* 9 Bit 8080-II MCU Bus Interface
+* 16 Bit 8080-II MCU Bus Interface
+* 18 Bit 8080-II MCU Bus Interface
+* 3-Wire 9 Bit data serial interface I
+* 4-Wire 8 Bit data serial interface I
+* 3-Wire 9 Bit data serial interface II
+* 4-Wire 8 Bit data serial interface II
+
+We need to figure out which interface we can use.
+Looking at section 7.1.1 of the datasheet a table is provided mapping the IM[3:0] pins on the driver to the interfaces.
+This table is copied below for convenience.
+
+.The interface selection table from the datasheet<<ILI9341>>
+[]
+image::interface_select_table.png[]
+
+Consulting back to the schematic in <<fig_schematic>> we can see the IM[3:0] is set to `1110` on the shield.
+As such we will be using the 4-Wire 8 Bit data serial interface II.
+
+==== Enabling Zephyr to talk over SPI
+
+==== Configuring SPI
+
+==== Talking to the LCD
+
+=== Enabling I2C
+
+== Exercise
+
+[bibliography]
+== References
+
+* [[[shield_schematic, 1]]] adafruit. _Adafruit 2.8" TFT Touch Shield v2 - Capacitive Schematic._ [Online] Available: https://cdn-learn.adafruit.com/assets/assets/000/027/040/original/adafruit_products_cap_touch28_tft.png
+* [[[ILI9341, 2]]] ILITEK. _ILI9341 a-SI TFT LCD Single Chip Driver 240RGBx320 Resolution and 262K color Specification._ [Online] Available: https://cdn-shop.adafruit.com/datasheets/ILI9341.pdf
