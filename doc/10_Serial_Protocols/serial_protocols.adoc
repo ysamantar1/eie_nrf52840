@@ -3,6 +3,7 @@
 :imagesdir: imgs
 :toc:
 :xrefstyle: short
+:stem: latexmath
 
 == Introduction
 
@@ -71,11 +72,176 @@ image::interface_select_table.png[]
 Consulting back to the schematic in <<fig_schematic>> we can see the IM[3:0] is set to `1110` on the shield.
 As such we will be using the 4-Wire 8 Bit data serial interface II.
 
+Referring to section 7.1.8 to sections 7.1.10 of the data sheet we can find everything we need to implement the basics needed to talk to the LCD.
+The 4 line serial interface II in reality consists of 5 lines
+
+* SCL
+* SDI
+* SDO
+* CS
+* D/CX
+
+The first 4 lines are the lines we expect for SPI with the data command select line used to tell the LCD driver if we are sending a command or data.
+As we can see in the schematic these lines are all connected to the nRF52840 allowing us to use this bus. 
+The data sheet also mentions that data is read off the SDI line on the rising edge of the clock and that data is shifted out on the falling out of the clock. 
+This implies we are using SPI mode 0.
+
 ==== Enabling Zephyr to talk over SPI
+
+To talk over SPI with zephyr first we have to enable SPI in the KConfig file. 
+Open the app/prj.conf file and add the following line to enable SPI.
+
+[]
+image::prj_edits.png[]
+
+Next we need to tell zephyr which pins we are using on the board to communicate with the LCD driver.
+To do this we will modify the device tree board overlay for the nRF52840dk. 
+Open the app/boards/nrf52840dk_nrf52840.overlay file in your project and add the following sections.
+
+[]
+image::board_config.png[]
+
+We are doing 2 things in this file.
+First we are for convinience defining that pin 11 on GPIO port 1 is being called the dcx_gpios which will be used for the data/command select.
+Second we are telling the board that that pin 12 on GPIO port 1 will be used as the CS for the arduino spi port.
+As the nRF52840dk has the arduino compatible header files the arduino communication ports and headers are all pre-defined by the board device tree files.
+
+At this point we can open the main.c file and add the necessary header files and configure the GPIO pins.
+[]
+image::main_c_gpio_configured.png[]
+While the D/C select line was configured similarly to how we have configured GPIO in the past for LEDs or buttons, the CS uses a special data structure. 
+For now we are setting the delay to 0, but this will be addressed later.
 
 ==== Configuring SPI
 
+At this point we will be configuring the SPI peripheral on the nRF52840. 
+Zephyr uses an internally defined struct to configure the SPI peripheral the definition of which is given below for convenience.
+[C]
+----
+struct spi_config {
+	/** @brief Bus frequency in Hertz. */
+	uint32_t frequency;
+	/**
+	 * @brief Operation flags.
+	 *
+	 * It is a bit field with the following parts:
+	 *
+	 * - 0:      Master or slave.
+	 * - 1..3:   Clock polarity, phase and loop mode.
+	 * - 4:      LSB or MSB first.
+	 * - 5..10:  Size of a data frame (word) in bits.
+	 * - 11:     Full/half duplex.
+	 * - 12:     Hold on the CS line if possible.
+	 * - 13:     Keep resource locked for the caller.
+	 * - 14:     Active high CS logic.
+	 * - 15:     Motorola or TI frame format (optional).
+	 *
+	 * If @kconfig{CONFIG_SPI_EXTENDED_MODES} is enabled:
+	 *
+	 * - 16..17: MISO lines (Single/Dual/Quad/Octal).
+	 * - 18..31: Reserved for future use.
+	 */
+	spi_operation_t operation;
+	/** @brief Slave number from 0 to host controller slave limit. */
+	uint16_t slave;
+	/**
+	 * @brief GPIO chip-select line (optional, must be initialized to zero
+	 * if not used).
+	 */
+	struct spi_cs_control cs;
+};
+----
+Let's look at these fields one by one.
+
+Starting with frequency, this is the speed of the clock. 
+Referring back to the LCD controller datasheet in section 18.3.4 we get a timing diagram giving us the minimum timing for the SPI bus. 
+This diagram is copied below for convenience.
+
+.SPI Timing diagram <<ILI9341>>
+image::SPI_timing.png[]
+
+In this case for clock frequency we need to look at the stem:[t_{wc}] and stem:[t_{rc}]. 
+These refer to the minimum clock period for a write and read respectively. 
+As we want just one time to select a frequency we will use the larger stem:[t_{rc}] of 150 ns.
+Converting this to frequency we get a max clock frequency of 6.6 MHz, meaning we can chose any frequency slower.
+For convenience we will set our clock frequency to 1 MHz or 1 000 000 Hz.
+
+Additionally from the timing diagram we can use the stem:[t_{css}] and stem:[t_{csh}] timings to select the chip select delay.
+These times refer to the minimum time the chip select must be low before data is sent and the minimum time the chip select must be held after a packet is finished being sent.
+Both times are 40 ns, however the chip select delay is set in us so we will set the delay to 1 us.
+
+Next we will set the operation field.
+This field is a bit field that controls the SPI operation.
+As a summary from previous sections
+
+* The nRF52840 is the SPI master
+* We are using SPI mode 0
+* We are sending 8 byte packets 
+* The data is being sent out MSB first
+
+From this we can construct the bitfield.
+
+The slave number can be set to 0.
+
+Finally the chip select will be set to the chip select control struct previously made.
+Putting this all together the final config looks like this.
+[]
+image::spi_config.png[]
+
+Finally before we can talk to the LCD we will create a zephyr device struct which will allow us to access the SPI peripheral in the microcontroller.
+In main we will check if the device is ready before use.
+
 ==== Talking to the LCD
+
+Before we start sending data to the LCD we will create a helper function to send LCD commands.
+[]
+image::lcd_cmd.png[]
+This function takes in a 1 byte command, and an optional pointer to data to send with the command.
+First we put the command into the SPI buffer structures that zephyr uses to allow you to send multiple pieces of data at once.
+Then we set the D/C select pin high to signal to the LCD we are about to send a command and send the command over SPI.
+Next if data was passed in we can set the D/C select low to signal we are sending data and send the data.
+Remember to also define your function prototype.
+
+Finally we can start sending commands to the LCD. 
+Looking at section 8 of the datasheet all the commands are listed, however we only need a small subset of them which for ease of use we will define as given below
+[C]
+----
+#define CMD_SOFTWARE_RESET 0x01
+#define CMD_SLEEP_OUT 0x11
+#define CMD_DISPLAY_ON 0x29
+#define CMD_COLUMN_ADDRESS_SET 0x2A
+#define CMD_ROW_ADDRESS_SET 0x2B
+#define CMD_MEMORY_WRITE 0x2C
+----
+We can use the first free commands to setup the LCD. 
+None of these commands take data.
+[]
+image::lcd_setup.png[]
+
+Next we can start writing data to LCD data buffer to draw on the screen.
+This uses 3 commands: set column address, set row address and memory write.
+Set column address takes in a start column from 0 to 319 (`0x139`) in 2 bytes and a end column with the same format.
+Set row similarly takes a start row and end row in the range 0 to 239 (`0xEF`).
+Memory write takes in multiples of 3 bytes giving the colour each pixel will be.
+Starting from the top left corner of area specified with the set column and row address memory write can write multiple pixels at once left to write, top to bottom. 
+
+The below code creates a 10 by 10 pixel red square roughly in the centre of the screen for example.
+[]
+image::lcd_draw_square.png[]
+
+An example of the square is shown below
+[]
+image::red_square.jpg[width=50%]
+
+We can also use an oscilloscope or logic analyser to view and decode the spi traces. 
+For example below is showing when the column command and data is sent. 
+The traces from top to bottom are the CS, MOSI, MISO, and CLK.
+At the bottom we can see the scope is decoding the SPI messages, however these are truncated due to the level of zoom.
+[]
+image::SPI_SCOPE.png[]
+
+For more information on these commands refer to sections 8.2.20 to 8.2.22 of the datasheet.
+
 
 === Enabling I2C
 
