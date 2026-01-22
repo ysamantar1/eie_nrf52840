@@ -4,6 +4,7 @@
 :toc:
 :xrefstyle: short
 :stem: latexmath
+:source-highlighter: highlight.js
 
 == Introduction
 
@@ -250,10 +251,101 @@ For more information on these commands refer to sections 8.2.20 to 8.2.22 of the
 
 === Enabling I2C
 
+We will now look at how I2C can be used to enable the touch controller.
+
+To start with like with every new feature in zephyr we have worked with we need to enable the corresponding config option in the KConfig file.
+[]
+image::i2c_config.png[]
+
+Similarly to when we looked at SPI we will need the datasheet for the FT6206 touch controller.
+The datasheet can be found here: https://cdn-shop.adafruit.com/datasheets/FT6x06%20Datasheet_V0.1_Preliminary_20120723.pdf <<FT6x06>>.
+
+Looking through the datasheet we can see the FT6x06 provides a 
+
+* I2C bus 
+* interrupt signal to inform the host processor that there is touch data
+* A reset line
+
+Looking at the schematic in <<fig_schematic>> we can see that only the I2C bus is connected and thus we can ignore the interrupt and reset line.
+In section 2.4 of the data sheet it tells us that the touch controller is always acting as the I2C slave, and that the I2C bus can support a clock frequency between 10 and 400 kHz<<FT6x06>>.
+Missing from the datasheet for the touch controller is the I2C address. 
+Looking through sample code for the FT6206 provided by Adafruit, we can find that the address is `0x38` or 56.
+
+At this point we can start to add to our main.c file to turn on the I2C peripheral.
+We will need to include the relevant header files, access the I2C peripheral from the device tree and create a associated device. 
+Then in main we can check if the device is ready to use and configure the I2C bus.
+Zephyr provides the i2c_configure API we can use to configure the I2C device. 
+It takes in a device pointer and a config bitfield.
+For the bitfield we will set the speed and I2C mode.
+Based on the datasheet we will set the I2C mode to be a master or `I2C_MODE_CONTROLLER` and the speed to between 10 kHz and 400 kHz.
+Zephyr provides pre-defined speeds for 100 kHz and 400 kHz as `I2C_SPEED_STANDARD` and `I2C_SPEED_FAST`.
+In the example below `I2C_SPEED_FAST` is used, however either speed will work. 
+[]
+image::i2c_main_config.png[]
+
+Next we can start actually reading and writing data to and from the touch controller.
+Looking through the datasheet you may notice it doesn't actually document what data is sent over the I2C bus.
+FocalTech chose to put the communication definitions in a separate application note available here:
+https://cdn-shop.adafruit.com/datasheets/FT6x06_AN_public_ver0.1.3.pdf
+Section 1.1 documents how data is read and written to the touch controller.
+To read data a message is first written to the touch controller containing the register address we wish to read from.
+Then a second message is started which reads the data back from that address<<FT6X06AN>>.
+Section 3 of the application note then documents the various registers that can be read or written from and the data that is sent back or read.
+For a simple driver to read the position of a touch we will need the `TD_STATUS`, `P1_XH`, `P1_XL`, `P1_YH`, and `P1_YL` registers. 
+We can define constants to access them and some of the other data we will need more easily
+[C]
+----
+#define SLEEP_MS 100
+#define ADDR 0x38
+#define TD_STATUS 0x02
+#define P1_XH 0x03
+#define P1_XL 0x04
+#define P1_YH 0x05
+#define P1_YL 0x06
+
+#define TOUCH_EVENT_MASK 0xC0
+#define TOUCH_EVENT_SHIFT 6
+
+#define TOUCH_POS_MSB_MASK 0x0F
+
+typedef enum {
+  TOUCH_EVENT_PRESS_DOWN = 0b00u,
+  TOUCH_EVENT_LIFT_UP = 0b01u,
+  TOUCH_EVENT_CONTACT = 0b10u,
+  TOUCH_EVENT_NO_EVENT = 0b11u
+} touch_event_t;
+----
+Next we can write a simple function to send a command and recieve a response using the zephyr `i2c_transmit` API.
+This API takes in the I2C device, an array of messages to be sent/received, the number of messages and the address of the device being talked to.
+We will define the message array with 2 messages. 
+The first message will be a message we write containing the register we want to read from.
+The second message we will read from the bus into the response.
+[]
+image::i2c_helper.png[]
+
+We can use this helper function to read touch events from the screen in our main loop.
+[]
+image::i2c_main_loop.png[]
+
+Using an oscilloscope we can look at the I2C lines and see this working as expected
+[]
+image::I2C_SCOPE.PNG[]
+In this case the top trace is the SDA line and the bottom trace is the SCL line.
+We can also see at the bottom the scope is decoding the packet and we are first writing to the address `0x38` the data `0x04` corresponding to the `P1_XL` register then we read data back from address `0x38`, which in this case is `0x98` corresponding to part of the LSB of the x position.
+
 == Exercise
+
+* Combine the touch and LCD drivers we have written. 
+  Have the LCD draw a shape at the location you touch.
+* Create a gradient effect on the LCD over the whole screen.
+* In the lesson we exclusively wrote data to the LCD driver and read data from the touch controller.
+  Using the datasheets for both components find a data field you can read from the LCD driver and write to the touch controller.
 
 [bibliography]
 == References
 
 * [[[shield_schematic, 1]]] adafruit. _Adafruit 2.8" TFT Touch Shield v2 - Capacitive Schematic._ [Online] Available: https://cdn-learn.adafruit.com/assets/assets/000/027/040/original/adafruit_products_cap_touch28_tft.png
 * [[[ILI9341, 2]]] ILITEK. _ILI9341 a-SI TFT LCD Single Chip Driver 240RGBx320 Resolution and 262K color Specification._ [Online] Available: https://cdn-shop.adafruit.com/datasheets/ILI9341.pdf
+* [[[FT6x06, 3]]] FocalTech. _FT6x06 Self-Capacitive Touch Panel Controller._ [Online] Available: https://cdn-shop.adafruit.com/datasheets/FT6x06%20Datasheet_V0.1_Preliminary_20120723.pdf
+* [[[AdafruitFT6206, 4]]] Adafruit, _Adafruit_FT6206 Library._ [Online] Available https://github.com/adafruit/Adafruit_FT6206_Library
+* [[[FT6X06AN, 5]]] FocalTech. _Application Note for FT6x06 CTPM._ [Online] Available: https://cdn-shop.adafruit.com/datasheets/FT6x06_AN_public_ver0.1.3.pdf
