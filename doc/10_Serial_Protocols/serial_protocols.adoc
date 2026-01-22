@@ -224,6 +224,11 @@ Set column address takes in a start column from 0 to 319 (`0x139`) in 2 bytes an
 Set row similarly takes a start row and end row in the range 0 to 239 (`0xEF`).
 Memory write takes in multiples of 3 bytes giving the colour each pixel will be.
 Starting from the top left corner of area specified with the set column and row address memory write can write multiple pixels at once left to write, top to bottom. 
+The LCD does not use a full 8 bits for each colour.
+Instead it uses a 18 bit colour system which the diagram below shows the packing in a SPI packet.
+
+.18 bit colour mapping for SPI<<ILI9341>>
+image::spi_color.png[]
 
 The below code creates a 10 by 10 pixel red square roughly in the centre of the screen for example.
 []
