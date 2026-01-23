@@ -9,6 +9,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
 
+
 #include "BTN.h"
 #include "LED.h"
 
@@ -32,21 +33,23 @@ typedef enum {
   TOUCH_EVENT_NO_EVENT = 0b11u
 } touch_event_t;
 
-#define ARDUINO_I2C_NODE DT_NODE_LABEL(arduino_i2c)
+#define ARDUINO_I2C_NODE DT_NODELABEL(arduino_i2c)
 static const struct device* dev = DEVICE_DT_GET(ARDUINO_I2C_NODE);
 
 // This helper function will be used to read touch events from the screen in our main loop
-void touch_control_cmd_rsp(uint8_t cmd, uint_t * rsp){
-  struct i2c_msg cmd_rsp[2] = {
+void touch_control_cmd_rsp(uint8_t cmd, uint8_t * rsp){
+  struct i2c_msg cmd_rsp_msg[2] = {
     [0]={.buf=&cmd, .len=1, .flags=I2C_MSG_WRITE},
     [1]={.buf=&cmd, .len=1, .flags=I2C_MSG_RESTART | I2C_MSG_READ | I2C_MSG_STOP}
   };
-  i2c_transfer(dev, msgs: cmd_rsp_msg, num_msgs:2, addr: ADDR);
+  i2c_transfer(dev, cmd_rsp_msg, 2, ADDR);
 }
 
 int main(void) {
   ////////////////////////////////////////////////// SPI IMPLEMENTATION ///////////////////////////////////////////////////
-  
+  /*
+
+  */
   
   ////////////////////////////////////////////////// I2C IMPLEMENTATION ///////////////////////////////////////////////////
 
@@ -54,7 +57,7 @@ int main(void) {
     return 0;
   }
 
-  if (0 > i2c_configure(dev, dev_config: I2C_SPEED_SET(I2C_SPEED_FAST) | I2C_MODE_CONTROLLER)){
+  if (0 > i2c_configure(dev, I2C_SPEED_SET(I2C_SPEED_FAST) | I2C_MODE_CONTROLLER)){
     return 0;
   }
 
@@ -66,12 +69,25 @@ int main(void) {
   }
 
   while(1) {
-    uint8_t touch status;
-    touch_control_cmd_rsp(cmd: TD_STATUS, rsp: &touch_status);
+    uint8_t touch_status;
+    touch_control_cmd_rsp(TD_STATUS, &touch_status);
     if(touch_status == 1) {
-      
+      uint8_t x_pos_h;
+      uint8_t x_pos_l;
+      uint8_t y_pos_h;
+      uint8_t y_pos_l;
+
+      touch_control_cmd_rsp(P1_XH, &x_pos_h);
+      touch_control_cmd_rsp(P1_XH, &x_pos_l);
+      touch_control_cmd_rsp(P1_XH, &y_pos_h);
+      touch_control_cmd_rsp(P1_XH, &y_pos_l);
+
+      uint16_t x_pos = ((x_pos_h & TOUCH_POS_MSB_MASK) << 8) + x_pos_l;
+      uint16_t y_pos = ((y_pos_h & TOUCH_POS_MSB_MASK) << 8) + y_pos_l;
+
+      printk("Touch at %u, %u\n", x_pos, y_pos);
     }
-    k_msleep(ms:SLEEP_MS);
+    k_msleep(SLEEP_MS);
   }
 	return 0;
 }
