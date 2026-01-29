@@ -7,6 +7,19 @@
 
 == Introduction
 
+Throughout this course we have primarily been depending on the features provided by the zephyr RTOS.
+Zephyr has integrated several external projects, referred to as zephyr modules, to provide functionality that zephyr shouldn't recreate.
+Some examples of these modules include
+
+* Silicon Vender HALs
+* Cryptography libraries
+* File Systems
+* Communication Libraries
+
+We have technically already used two modules in this course from the beginning;
+These modules are the Nordic HAL and the ARM Common Microcontroller Software Interface Standard (CMSIS) which are both necessary to compile zephyr for the nRF52840.
+
+Today we will look at the Light and Versatile Graphics Library, which provides a convenient framework for making UIs designed for embedded systems.
 
 == Lesson
 
@@ -58,8 +71,8 @@ We will now create 4 button objects on the screen to toggle each of the LEDs.
 LVGL uses a tree data structure to create and store objects.
 For the button example we will create 4 buttons that are children of the screen.
 Then we will create a label that is a child of each button.
-
-TODO ADD DIAGRAM
+[]
+image::widget_tree.png[]
 
 This can be done with a for loop easily.
 []
