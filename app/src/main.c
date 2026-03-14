@@ -2,11 +2,9 @@
  * @file main.c
  */
 
-// #include <inttypes.h>
 #include <zephyr/kernel.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/printk.h>
-// #include <zephyr/syscalls/byteorder.h>
 
 #include <zephyr/device.h>
 #include <lvgl.h>
@@ -23,10 +21,6 @@
 
 /* --------------------------------------------------------------------------
  * UI State Machine
- * --------------------------------------------------------------------------
- * BT callbacks run in the BT RX thread; they only set flags and copy strings.
- * The main thread reads those flags and calls LVGL.
- * A mutex protects the shared state.
  * -------------------------------------------------------------------------- */
 typedef enum {
     UI_STATE_ADVERTISING,
@@ -46,9 +40,7 @@ static lv_obj_t *bg_rect     = NULL;
 static lv_obj_t *label_title = NULL;
 static lv_obj_t *label_sub   = NULL;
  
-/* --------------------------------------------------------------------------
- * ui_set_state() — safe to call from any thread
- * -------------------------------------------------------------------------- */
+
 static void ui_set_state(ui_state_t state, const char *passkey_str)
 {
     k_mutex_lock(&ui_mutex, K_FOREVER);
@@ -61,9 +53,7 @@ static void ui_set_state(ui_state_t state, const char *passkey_str)
     k_mutex_unlock(&ui_mutex);
 }
 
-/* --------------------------------------------------------------------------
- * ui_render() — must only be called from main thread
- * -------------------------------------------------------------------------- */
+
 static void ui_render(void)
 {
     k_mutex_lock(&ui_mutex, K_FOREVER);
@@ -92,9 +82,9 @@ static void ui_render(void)
         col_bg     = lv_color_hex(0x003080);
         col_title  = lv_color_hex(0xFFFFFF);
         col_sub    = lv_color_hex(0xADD8E6);
-        title_text = "BLE SecureDemo";
-        sub_text   = "Advertising...\n\nOpen nRF Connect\non your phone\nand connect.";
-        title_font = &lv_font_montserrat_28;
+        title_text = "BLE Secure Demo";
+        sub_text   = "Open nRF Connect\non your phone\nand connect.";
+        title_font = &lv_font_montserrat_48;
         break;
  
     case UI_STATE_CONNECTED:
@@ -111,7 +101,7 @@ static void ui_render(void)
         col_title  = lv_color_hex(0xFFFFFF);
         col_sub    = lv_color_hex(0xFFD700);
         title_text = pk;               /* "123456" */
-        sub_text   = "Enter this passkey\non your phone\n(nRF Connect)";
+        sub_text   = "Match this passkey\non your phone\n(nRF Connect)";
         title_font = &lv_font_montserrat_48; /* big digits */
         break;
  
@@ -120,8 +110,8 @@ static void ui_render(void)
         col_title  = lv_color_hex(0x00FF80);
         col_sub    = lv_color_hex(0xFFFFFF);
         title_text = "Paired!";
-        sub_text   = "Secure link active.\nGATT service\nnow accessible.";
-        title_font = &lv_font_montserrat_28;
+        sub_text   = "Secure link active."; //\nGATT service\nnow accessible.";
+        title_font = &lv_font_montserrat_48;
         break;
  
     case UI_STATE_PAIR_FAILED:
@@ -151,7 +141,7 @@ static void ui_render(void)
 }
 
 /* --------------------------------------------------------------------------
- * ui_init() — initialise LVGL screen objects
+ * This function initializes LVGL screen objects
  * -------------------------------------------------------------------------- */
 static int ui_init(void)
 {
@@ -176,7 +166,7 @@ static int ui_init(void)
     lv_obj_set_style_bg_opa(bg_rect, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_bg_color(bg_rect, lv_color_hex(0x003080), LV_PART_MAIN);
  
-    /* Title label — upper area */
+    /* Title label*/
     label_title = lv_label_create(bg_rect);
     lv_label_set_long_mode(label_title, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(label_title, LV_HOR_RES - 20);
@@ -186,7 +176,7 @@ static int ui_init(void)
     lv_obj_set_style_text_color(label_title, lv_color_white(), LV_PART_MAIN);
     lv_label_set_text(label_title, "Initialising...");
  
-    /* Sub-label — lower area */
+    /* Sub-title label*/
     label_sub = lv_label_create(bg_rect);
     lv_label_set_long_mode(label_sub, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(label_sub, LV_HOR_RES - 20);
@@ -265,7 +255,7 @@ BT_GATT_SERVICE_DEFINE(secure_demo_svc,
  * -------------------------------------------------------------------------- */
 static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA(BT_DATA_NAME_SHORTENED, "SecureDemo", 10),
+    BT_DATA(BT_DATA_NAME_SHORTENED, "Secure Demo", 10),
 };
  
 static const struct bt_data sd[] = {
@@ -277,6 +267,7 @@ static struct bt_conn *current_conn;
 /* --------------------------------------------------------------------------
  * Auth / Pairing Callbacks
  * -------------------------------------------------------------------------- */
+/* This function displays passkey and requires user to input the passkey displayed */
 static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
 {
     char addr[BT_ADDR_LE_STR_LEN];
@@ -289,12 +280,13 @@ static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
     printk("  PASSKEY REQUIRED\n");
     printk("  Peer:    %s\n", addr);
     printk("  Passkey: %s\n", pk_str);
-    printk("  Enter code on nRF Connect (phone)\n");
+    printk("  Write code on nRF Connect mobile app\n");
     printk("============================================\n\n");
  
     ui_set_state(UI_STATE_PASSKEY, pk_str);
 }
- 
+
+/* This function confirms whether the passkey matches the user (Uses LSE and NC and is L4)*/
 static void auth_passkey_confirm(struct bt_conn *conn, unsigned int passkey)
 {
     char addr[BT_ADDR_LE_STR_LEN];
@@ -312,7 +304,8 @@ static void auth_passkey_confirm(struct bt_conn *conn, unsigned int passkey)
     ui_set_state(UI_STATE_PASSKEY, pk_str);
     bt_conn_auth_passkey_confirm(conn);
 }
- 
+
+/* This function addresses the case where pairing fails (wrong passkey / unconfirmed NC) */
 static void auth_cancel(struct bt_conn *conn)
 {
     char addr[BT_ADDR_LE_STR_LEN];
@@ -320,7 +313,8 @@ static void auth_cancel(struct bt_conn *conn)
     printk("[AUTH] Pairing cancelled by %s\n", addr);
     ui_set_state(UI_STATE_PAIR_FAILED, NULL);
 }
- 
+
+/* This function addresses the case where the pairing is successful */ 
 static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
     char addr[BT_ADDR_LE_STR_LEN];
@@ -329,7 +323,8 @@ static void pairing_complete(struct bt_conn *conn, bool bonded)
            addr, bonded ? "YES" : "NO");
     ui_set_state(UI_STATE_PAIRED, NULL);
 }
- 
+
+/* This function addresses the case where the pairing fails */
 static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 {
     char addr[BT_ADDR_LE_STR_LEN];
@@ -390,10 +385,9 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
  
     ui_set_state(UI_STATE_ADVERTISING, NULL);
  
-    bt_unpair(BT_ID_DEFAULT, bt_conn_get_dst(conn));
+    bt_unpair(BT_ID_DEFAULT, bt_conn_get_dst(conn)); // unpairs after disconnected (USED FOR DEMO ONLY)
     int err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad),
                                sd, ARRAY_SIZE(sd));
-    // ui_set_state(UI_STATE_ADVERTISING, NULL)
 
     if (err) {
         printk("[ADV] Failed to restart advertising (err %d)\n", err);
